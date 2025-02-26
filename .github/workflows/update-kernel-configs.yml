@@ -25,7 +25,7 @@ jobs:
           | cut --delimiter='/' --fields=3 | tail -n 1 > latest-upstream-config
           echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
           echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
-      - name: Checkout linux-tkg
+      - name: Checkout main
         uses: actions/checkout@v4
 
       - name: Update config file

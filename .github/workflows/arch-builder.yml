@@ -40,7 +40,7 @@ jobs:
       - name: Install git
         run: pacman -Syu --noconfirm git
 
-      - name: Checkout Alpha
+      - name: Checkout main
         uses: actions/checkout@v4
 
       # 1. Install deps needed for building and sudo

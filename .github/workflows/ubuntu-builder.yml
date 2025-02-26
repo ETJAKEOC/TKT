@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout TKT
+      - name: Checkout main
         uses: actions/checkout@v4
 
       # - name: "[debug] make dummy modprobed-db file for faster ci"

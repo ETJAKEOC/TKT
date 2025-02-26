@@ -25,7 +25,7 @@ jobs:
         # it fails when there's no release
         continue-on-error: true
 
-      - name: Checkout Alpha
+      - name: Checkout main
         uses: actions/checkout@v4
 
       - name: Get latest kernel version
@@ -71,7 +71,7 @@ jobs:
     if: needs.build.result == 'success'
 
     steps:
-      - name: Checkout TKT
+      - name: Checkout main
         uses: actions/checkout@v4
 
       - name: Download release artifacts
