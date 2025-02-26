@@ -848,7 +848,7 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     elif [[ $_kver -ge 606 ]]; then
       _msg="Applying Glitched EEVDF additions patch"
       tkgpatch="$srcdir/0003-glitched-eevdf-additions.patch" && _tkg_patcher
-      if [ "$_eevdf_sched_ext_support" = "true" ] && [[ $_kver -ge 608 ]]; then
+      if [ "$_eevdf_sched_ext_support" = "true" ] && [[ $_kver -ge 608 ]] && [[ $_kver -le 611 ]]; then
         _msg="Applying Sched_ext support patch"
         curl "https://raw.githubusercontent.com/CachyOS/kernel-patches/master/${_basekernel}/sched/0001-sched-ext.patch" > "$srcdir"/0001-sched-ext.patch
         tkgpatch="$srcdir/0001-sched-ext.patch" && _tkg_patcher
@@ -940,7 +940,7 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _disable "MLX5_CORE"
   fi
 
-  if [ "$_eevdf_sched_ext_support" = "true" ] && [[ $_kver -ge 608 ]]; then
+  if ( [ "$_eevdf_sched_ext_support" = "true" ] && [[ $_kver -ge 608 ]] ) || [[ $_kver -ge 612 ]]; then
     _enable "SCHED_CLASS_EXT"
   fi
 
@@ -1675,23 +1675,11 @@ fi
   unset tkgpatch
   unset _msg
 
-  # Waydroid
-  if [ "${_cpusched}" != "pds" ] && [ "${_cpusched}" != "bmq" ]; then
-    if [ -z "$_waydroid" ]; then
-      plain ""
-      plain "Enable android modules for use with Waydroid?"
-      plain "https://waydro.id"
-      read -rp "`echo $'    > N/y : '`" CONDITION12;
-    fi
-    if [[ "$CONDITION12" =~ [yY] ]] || [ "$_waydroid" = "true" ]; then
-      _enable "ANDROID" "ANDROID_BINDER_IPC" "ANDROID_BINDERFS"
-      _disable "ANDROID_BINDER_IPC_SELFTEST"
-      scripts/config --set-str "ANDROID_BINDER_DEVICES" "binder,hwbinder,vndbinder" # These devices were missing from the original TKG script, added by ETJAKEOC.
-      if [[ "$CONDITION12" =~ [yY] ]]; then
-        read -rp "Press enter to continue..."
-      fi
-    fi
-  fi
+  # Waydroid - mostly for other distros as those are enabled on Arch
+  # PSI disabled on PDS/BMQ, so omit those
+    _enable "ANDROID" "ANDROID_BINDER_IPC" "ANDROID_BINDERFS"
+    _disable "ANDROID_BINDER_IPC_SELFTEST"
+    scripts/config --set-str "ANDROID_BINDER_DEVICES" "binder,hwbinder,vndbinder"
 
   # NR_CPUS
   if [ -n "$_NR_CPUS_value" ]; then

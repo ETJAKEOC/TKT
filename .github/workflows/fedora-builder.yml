@@ -8,7 +8,6 @@ on:
 
 
 env:
-  _waydroid: "true"
   _processor_opt: "generic"
   _distro: "Fedora"
   _git_mirror: "github.com"
@@ -37,7 +36,7 @@ jobs:
       - name: Install git (needed for checkout)
         run: dnf install git -y
 
-      - name: Checkount Alpha
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
       - name: fix git folder ownership
@@ -67,5 +66,5 @@ jobs:
         with:
           name: fedora-kernel-packages-${{ env._cpusched }}
           path: |
-            ${{ github.workspace }}/RPMS/*.rpm
+            RPMS/*.rpm
             kernelconfig*.txt
