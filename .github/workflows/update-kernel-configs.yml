@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 4
       matrix:
         link:
           - https://gitlab.archlinux.org/archlinux/packaging/packages/linux
@@ -31,7 +31,7 @@ jobs:
       - name: Update config file
         id: update-config
         run: |
-          cd kconfig/${{ steps.upstream-config.outputs.kver }}
+          cd kconfigs/${{ steps.upstream-config.outputs.kver }}
           wget ${{ matrix.link }}/-/raw/main/config -O config.x86_64
           if git diff --exit-code config.x86_64
           then
