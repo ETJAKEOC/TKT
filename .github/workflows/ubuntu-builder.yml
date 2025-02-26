@@ -32,6 +32,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install clang, llvm, and lld
+        run: sudo apt-get update && sudo apt-get install -y clang llvm lld
+
       - name: Checkout main
         uses: actions/checkout@v4
 

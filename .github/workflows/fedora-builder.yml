@@ -36,6 +36,9 @@ jobs:
       - name: Install git (needed for checkout)
         run: dnf install git -y
 
+      - name: Install clang, llvm, and lld
+        run: sudo dnf install -y clang llvm lld
+
       - name: Checkout main
         uses: actions/checkout@v4
 
