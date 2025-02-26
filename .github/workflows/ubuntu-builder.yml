@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Install clang, llvm, and lld
-        run: sudo apt-get update && sudo apt-get install -y clang llvm lld
+        run: sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm
 
       - name: Checkout main
         uses: actions/checkout@v4
