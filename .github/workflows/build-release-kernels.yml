@@ -37,7 +37,7 @@ jobs:
             | cut --delimiter='/' --fields=3 | grep "$1" | tail -n 1
           }
 
-          grep "_current_kernels=(" kconfig/prepare > current_kernels.txt
+          grep "_current_kernels=(" kconfigs/prepare > current_kernels.txt
           source current_kernels.txt
 
           latest_kernel=`get_latest_kernel "${_current_kernels[0]}"`
