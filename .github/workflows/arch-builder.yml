@@ -60,7 +60,9 @@ jobs:
       #     echo "${_modprobeddb_db_path}"
 
       - name: Compile Kernel
-        run: su user -c "yes '' | makepkg --noconfirm -s"
+        run: |
+          export MAKEFLAGS="-j$(nproc)"
+          su user -c "yes '' | makepkg --noconfirm -s"
         # run: |
         #   mkdir -p "$PKGDEST"
         #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
