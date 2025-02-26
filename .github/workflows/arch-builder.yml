@@ -72,5 +72,5 @@ jobs:
         with:
           name: arch-kernel-packages-${{ env._cpusched }}
           path: |
-            ${{ env.PKGDEST }}/linux*.pkg.tar.zst
+            ${{ env.PKGDEST }}/*.pkg.tar*
             kernelconfig*.txt
