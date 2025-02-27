@@ -31,6 +31,11 @@ jobs:
     container: archlinux:latest
 
     steps:
+      # We need to install git so the checkout is done with it
+      #- name: Update mirrorlist
+      #  run: |
+      #    pacman -Sy --noconfirm reflector
+      #    reflector --latest 50 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
 
       - name: Install git
         run: pacman -Syu --noconfirm git
@@ -38,6 +43,10 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
+      # 1. Install deps needed for building and sudo
+      # 2. create a user "user" and give it passwordless sudo
+      #    and necessary permissions
+      #    because makepkg absolutely refuses to run as root
       - name: Prepare for makepkg
         run: |
           pacman -Syu --noconfirm base-devel sudo
@@ -45,10 +54,18 @@ jobs:
           chown user -R ..
           chown user -R /tmp
 
+      # - name: "[debug] make dummy modprobed-db file for faster ci"
+      #   run: |
+      #     touch "${_modprobeddb_db_path}"
+      #     echo "${_modprobeddb_db_path}"
+
       - name: Compile Kernel
         run: |
           export MAKEFLAGS="-j$(nproc)"
-          su user -c "makepkg --noconfirm -s"
+          su user -c "yes '' | makepkg --noconfirm -s"
+        # run: |
+        #   mkdir -p "$PKGDEST"
+        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
 
       - name: rename kernel config
         run: mv kernelconfig.new kernelconfig.arch.${{ env._cpusched }}.txt
