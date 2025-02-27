@@ -38,18 +38,10 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
-      # - name: "[debug] make dummy modprobed-db file for faster ci"
-      #   run: |
-      #     touch "${_modprobeddb_db_path}"
-      #     echo "${_modprobeddb_db_path}"
-
       - name: Install deps and compile kernel
         run: |
           export MAKEFLAGS="-j$(nproc)"
-          yes '' | ./install.sh install
-        # run: |
-        #   mkdir -p "$PKGDEST"
-        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
+          ./install.sh install
 
       - name: Cleanup useless DEB files
         run: rm -rf DEBS/*dbg*.deb DEBS/*libc-dev*.deb

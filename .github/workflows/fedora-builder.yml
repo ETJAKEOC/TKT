@@ -48,18 +48,10 @@ jobs:
       - name: run git status
         run: git status
 
-      # - name: "[debug] make dummy modprobed-db file for faster ci"
-      #   run: |
-      #     touch "${_modprobeddb_db_path}"
-      #     echo "${_modprobeddb_db_path}"
-
       - name: Install deps and compile kernel
         run: |
           export MAKEFLAGS="-j$(nproc)"
-          yes '' | ./install.sh install
-        # run: |
-        #   mkdir -p "$PKGDEST"
-        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
+          ./install.sh install
 
       - name: Cleanup useless RPM files
         run: rm -rf RPMS/*kernel-headers*.rpm
