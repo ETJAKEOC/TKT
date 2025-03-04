@@ -1019,8 +1019,18 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
   _cpu_marchs+=("k8" "k8sse3" "k10" "barcelona" "bobcat" "jaguar" "bulldozer" "piledriver")
   _cpu_marchs+=("steamroller" "excavator" "zen" "zen2" "zen3" "zen4" "mpsc" "atom" "core2" "nehalem" "westmere")
   _cpu_marchs+=("bonnell" "silvermont" "sandybridge" "ivybridge" "haswell" "broadwell" "skylake")
-  _cpu_marchs+=("skylakex" "cannonlake" "icelake" "goldmont" "goldmontplus" "cascadelake" "emeraldrapids")
+  _cpu_marchs+=("skylakex" "cannonlake" "goldmont" "goldmontplus" "cascadelake" "emeraldrapids")
   _cpu_marchs+=("cooperlake" "tigerlake" "sapphirerapids" "rocketlake" "alderlake" "raptorlake" "meteorlake")
+
+  if [[ "$_kver" -ge 601 ]]; then
+    _cpu_marchs+=("icelake_client" "icelake_server")
+    # change "icelake" into "icelake_client" to fit with graysky patches for kernels >=6.1
+    [[ "$_processor_opt" == "icelake" ]] && _processor_opt="icelake_client"
+  else
+    _cpu_marchs+=("icelake")
+    # channge "icelake_client" to "icelake" to fit with grasky patches for kernels < 6.1
+    [[ "$_processor_opt" == "icelake_client" ]] && _processor_opt="icelake"
+  fi
 
   typeset -A _generic_march_map
   _generic_march_map=(
@@ -1046,6 +1056,8 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _prompt_from_array "${_cpu_marchs[@]}"
     _processor_opt="${_selected_value}"
   fi
+
+  msg2 "Setting cpu march to $_processor_opt"
 
   for _march in "${_cpu_marchs[@]}"
   do
@@ -1081,9 +1093,9 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
       _prompt_from_array "${_x86_64_isalvl_array_text[@]}"
       _x86_64_isalvl="$((_selected_index+1))"
     fi
-    if [[ "$_x86_64_isalvl" =~ ^(1|2|3)$ ]]; then
-      scripts/config --set-val "X86_64_VERSION" "$_x86_64_isalvl"
-    fi
+
+    scripts/config --set-val "X86_64_VERSION" "$_x86_64_isalvl"
+    msg2 "Setting generic_cpu to x86-64-v$_x86_64_isalvl"
   fi
 
   # Disable some debugging
@@ -1167,14 +1179,14 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
         yield_type_array_text=(
           "No yield.\n        Supposedly best option for gaming performance but might lead to stability issues on some (AMD) platforms"
           "Yield only to better priority/deadline tasks.\n        Could lead to stability issues on some (Intel) platforms"
-          "Expire timeslice and recalculate deadline.\n        Can be a good option with low rr_interval"
+          "Expire timeslice and recalculate deadline."
         )
       elif [[ "${_cpusched}" =~ ^(pds|upds)$ ]]; then
         plain "For (U)PDS"
         yield_type_array_text=(
           "No yield.\n        Recommended option for gaming - \"tkg\" default"
           "Yield only to better priority/deadline tasks.\n        Could lead to stability issues on some (Intel) platforms"
-          "Expire timeslice and recalculate deadline.\n        Can be a good option with low rr_interval"
+          "Expire timeslice and recalculate deadline."
         )
       else #BMQ
         plain "For BMQ (experimental) - No recommended value yet, so try for yourself x) :"
@@ -1207,7 +1219,7 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
   fi
 
   # Round Robin interval
-  if [[ "${_cpusched}" =~ ^(muqss|pds|bmq|upds)$ ]]; then
+  if [[ "${_cpusched}" =~ ^(muqss|pds|bmq|upds)$ && "$_kver" -le 606]]; then
     _rr_interval_array=("2" "4" "6" "8")
     _rr_interval_array_text=("2ms" "4ms" "6ms" "8ms")
 
@@ -1720,9 +1732,6 @@ fi
   if [ "$_distro" = "Arch" ]; then
     # don't run depmod on 'make install'. We'll do this ourselves in packaging
     sed -i '2iexit 0' scripts/depmod.sh
-
-    # get kernel version
-    make prepare ${llvm_opt}
   fi
 
   # modprobed-db
