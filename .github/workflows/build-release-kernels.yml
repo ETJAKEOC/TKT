@@ -15,14 +15,11 @@ jobs:
       latest_kernel: ${{ steps.versions.outputs.latest_kernel }}
 
     steps:
-      # Get latest release in repo, so we compare its version
-      # with the latest kernel available so far
       - name: Get latest release
         id: latest_release
         uses: pozetroninc/github-action-get-latest-release@master
         with:
           repository: ${{ github.repository }}
-        # it fails when there's no release
         continue-on-error: true
 
       - name: Checkout main
