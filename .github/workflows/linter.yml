@@ -1,33 +1,25 @@
 name: Lint Code Base
-on:
-  push:
-  pull_request:
+
+on: [push, pull_request]
+
 jobs:
-  build:
-    name: Lint Code Base
+  linter:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout Code
+      uses: actions/checkout@v2
 
-      - name: Cache linter
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache
-          key: ${{ runner.os }}-linter-${{ hashFiles('**/*.yml', '**/*.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-linter-
-            ${{ runner.os }}-
+    - name: Cache Linter
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache
+        key: ${{ runner.os }}-linter-${{ hashFiles('**/*.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-linter-
+          ${{ runner.os }}-
 
-      - name: Lint Code Base
-        uses: github/super-linter/slim@v7
-        env:
-          VALIDATE_ALL_CODEBASE: true
-          VALIDATE_YAML: true
-          VALIDATE_GITHUB_ACTIONS: true
-          VALIDATE_JSON: true
-          VALIDATE_JAVASCRIPT_ES: true
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run Super Linter
+      uses: github/super-linter@v3
+      with:
+        args: --no-color
