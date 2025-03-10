@@ -18,25 +18,58 @@ env:
   _kernel_on_diet: "false"
   _kernel_work_folder: "/tmp"
   _kernel_source_folder: "/tmp"
+  # _modprobeddb: "true"
   _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
 
 jobs:
-  build-kernel:
+  build_kernel_ubuntu:
+    name: Build Kernel on Ubuntu
     env:
       _cpusched: ${{ inputs._cpusched }}
-
-    runs-on: ubuntu-latest, self-hosted
+    runs-on: ubuntu-latest
     container: fedora:latest
 
     steps:
-      - name: Cache dnf packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/dnf
-          key: ${{ runner.os }}-fedora-${{ hashFiles('**/install.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-fedora-
+      - name: Install git (needed for checkout)
+        run: dnf install git -y
 
+      - name: Install clang, llvm, and lld
+        run: sudo dnf install -y clang llvm lld
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Fix git folder ownership
+        run: git config --global --add safe.directory $(pwd)
+
+      - name: Run git status
+        run: git status
+
+      - name: Install deps and compile kernel
+        run: |
+          yes '' | ./install.sh install
+
+      - name: Cleanup useless RPM files
+        run: rm -rf RPMS/*kernel-headers*.rpm
+
+      - name: Rename kernel config
+        run: mv kernelconfig.new "kernelconfig.fedora.${{ env._cpusched }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fedora-kernel-packages-${{ env._cpusched }}
+          path: |
+            RPMS/*.rpm
+            kernelconfig*.txt
+
+  build_kernel_self_hosted:
+    name: Build Kernel on Self-Hosted
+    env:
+      _cpusched: ${{ inputs._cpusched }}
+    runs-on: self-hosted
+    container: fedora:latest
+
+    steps:
       - name: Install git (needed for checkout)
         run: dnf install git -y
 

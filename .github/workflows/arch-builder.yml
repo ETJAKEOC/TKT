@@ -1,4 +1,5 @@
 name: Build archlinux kernel
+
 on:
   workflow_call:
     inputs:
@@ -16,45 +17,63 @@ env:
   _kernel_on_diet: "false"
   _kernel_work_folder: "/tmp"
   _kernel_source_folder: "/tmp"
+  # _modprobeddb: "true"
   _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
 
 jobs:
-  build-kernel:
+  build_kernel_ubuntu:
+    name: Build Kernel on Ubuntu
     env:
       _cpusched: ${{ inputs._cpusched }}
-
-    runs-on: ubuntu-latest, self-hosted
+    runs-on: ubuntu-latest
     container: archlinux:latest
 
     steps:
       - name: Install git
         run: pacman -Syu --noconfirm git
-
-      - name: Cache pacman packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/pacman/pkg
-          key: ${{ runner.os }}-pacman-${{ hashFiles('**/PKGBUILD') }}
-          restore-keys: |
-            ${{ runner.os }}-pacman-
-
       - name: Checkout main
         uses: actions/checkout@v4
-
       - name: Prepare for makepkg
         run: |
           pacman -Syu --noconfirm base-devel sudo clang llvm lld
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R ..
           chown user -R /tmp
-
       - name: Compile Kernel
         run: |
           su user -c "yes '' | makepkg --noconfirm -s"
-
       - name: Rename kernel config
         run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch-kernel-packages-${{ env._cpusched }}
+          path: |
+            ${{ env.PKGDEST }}/*.pkg.tar*
+            kernelconfig*.txt
 
+  build_kernel_self_hosted:
+    name: Build Kernel on Self-Hosted
+    env:
+      _cpusched: ${{ inputs._cpusched }}
+    runs-on: self-hosted
+    container: archlinux:latest
+
+    steps:
+      - name: Install git
+        run: pacman -Syu --noconfirm git
+      - name: Checkout main
+        uses: actions/checkout@v4
+      - name: Prepare for makepkg
+        run: |
+          pacman -Syu --noconfirm base-devel sudo clang llvm lld
+          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown user -R ..
+          chown user -R /tmp
+      - name: Compile Kernel
+        run: |
+          su user -c "yes '' | makepkg --noconfirm -s"
+      - name: Rename kernel config
+        run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: arch-kernel-packages-${{ env._cpusched }}
