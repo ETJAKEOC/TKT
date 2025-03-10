@@ -26,11 +26,11 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
-    "@actions/github": "^2.2.0",
+    "@actions/github": "^6.0.0",
     "@eslint-community/eslint-utils": "^4.4.1",
     "@eslint/eslintrc": "^3.3.0",
     "@humanwhocodes/module-importer": "^1.0.1",
-    "@humanwhocodes/retry": "^0.3.1",
+    "@humanwhocodes/retry": "^0.4.2",
     "@octokit/rest": "^21.0.2",
     "ajv": "^6.12.6",
     "ansi-styles": "^4.3.0",

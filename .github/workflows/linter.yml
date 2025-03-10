@@ -15,6 +15,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache: 'eslint'
 
     - name: Verify package-lock.json
       run: |
@@ -24,13 +25,14 @@ jobs:
         fi
 
     - name: Cache NPM dependencies
-      id: cache-npm
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+       id: cache-npm
+       uses: actions/cache@v4
+       with:
+       path: ~/.npm
+       key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+       restore-keys: |
+                     ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+                     ${{ runner.os }}-node-
 
     - name: Install dependencies
       if: steps.cache-npm.outputs.cache-hit != 'true'
