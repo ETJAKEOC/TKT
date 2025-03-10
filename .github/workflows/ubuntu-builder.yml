@@ -25,7 +25,7 @@ jobs:
     env:
       _cpusched: ${{ inputs._cpusched }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest, self-hosted
 
     steps:
       - name: Cache apt packages

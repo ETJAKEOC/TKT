@@ -6,7 +6,7 @@ on:
 
 jobs:
   update-kernel-config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest, self-hosted
     strategy:
       fail-fast: false
       max-parallel: 8
