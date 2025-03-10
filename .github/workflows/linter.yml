@@ -3,23 +3,26 @@ name: Lint Code Base
 on: [push, pull_request]
 
 jobs:
-  linter:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-
-    - name: Cache Linter
-      uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        path: ~/.cache
-        key: ${{ runner.os }}-linter-${{ hashFiles('**/*.sh') }}
+        node-version: '14'
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-linter-
-          ${{ runner.os }}-
+          ${{ runner.os }}-node-
 
-    - name: Run Super Linter
-      uses: github/super-linter@v3
-      with:
-        args: --no-color
+    - run: npm install
+
+    - run: npm run lint
+      env:
+        CI: true
