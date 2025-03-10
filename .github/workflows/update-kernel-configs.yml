@@ -1,12 +1,12 @@
 name: Update kernel config
 on:
   schedule:
-    - cron: '30 */24 * * *' # “At minute 30 past every 24th hour.”
+    - cron: '17 */12 * * *' # “At minute 17 past every 12th hour.”
   workflow_dispatch:
 
 jobs:
-  update_kernel_config_ubuntu:
-    name: Update Kernel Config on Ubuntu
+
+  update-kernel-config:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -25,7 +25,6 @@ jobs:
           | cut --delimiter="/" --fields=3 | tail -n 1 > latest-upstream-config
           echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
           echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
-
       - name: Checkout main
         uses: actions/checkout@v4
 
@@ -39,7 +38,6 @@ jobs:
             echo "config-updated=0" >> $GITHUB_OUTPUT
           else
             echo "config-updated=1" >> $GITHUB_OUTPUT
-
       - name: Push changes
         if: steps.update-config.outputs.config-updated == '1'
         run: |
@@ -49,46 +47,12 @@ jobs:
           git commit -am "Update ${{ steps.upstream-config.outputs.kver }} kernel config to ${{ steps.upstream-config.outputs.latest }}"
           git push
 
-  update_kernel_config_self_hosted:
-    name: Update Kernel Config on Self-Hosted
-    runs-on: self-hosted
+  call-builder-dispatcher:
+    needs: update-kernel-config
+    uses: ./.github/workflows/builder-dispatcher.yml
+    with:
+      os: ${{ matrix.os }}
+      _cpusched: ${{ steps.upstream-config.outputs.kver }}
     strategy:
-      fail-fast: false
-      max-parallel: 8
       matrix:
-        link:
-          - https://gitlab.archlinux.org/archlinux/packaging/packages/linux
-          - https://gitlab.archlinux.org/archlinux/packaging/packages/linux-lts
-
-    steps:
-      - name: Get latest config file version upstream
-        id: upstream-config
-        run: |
-          git -c "versionsort.suffix=-" \
-          ls-remote --exit-code --refs --sort="version:refname" --tags ${{ matrix.link }}.git "*.*" \
-          | cut --delimiter="/" --fields=3 | tail -n 1 > latest-upstream-config
-          echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
-          echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
-
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Update config file
-        id: update-config
-        run: |
-          cd kconfigs/${{ steps.upstream-config.outputs.kver }}
-          wget ${{ matrix.link }}/-/raw/main/config -O config.x86_64
-          if git diff --exit-code config.x86_64
-          then
-            echo "config-updated=0" >> $GITHUB_OUTPUT
-          else
-            echo "config-updated=1" >> $GITHUB_OUTPUT
-
-      - name: Push changes
-        if: steps.update-config.outputs.config-updated == '1'
-        run: |
-          git config --global user.name "ETJAKEOC"
-          git config --global user.email "ETJAKEOC@gmail.com"
-          git pull
-          git commit -am "Update ${{ steps.upstream-config.outputs.kver }} kernel config to ${{ steps.upstream-config.outputs.latest }}"
-          git push
+        os: [arch, ubuntu, fedora]
