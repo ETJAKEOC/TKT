@@ -51,32 +51,32 @@ jobs:
             ${{ env.PKGDEST }}/*.pkg.tar*
             kernelconfig*.txt
 
-  build_kernel_self_hosted:
-    name: Build Kernel on Self-Hosted
-    env:
-      _cpusched: ${{ inputs._cpusched }}
-    runs-on: self-hosted
-    container: archlinux:latest
-
-    steps:
-      - name: Install git
-        run: pacman -Syu --noconfirm git
-      - name: Checkout main
-        uses: actions/checkout@v4
-      - name: Prepare for makepkg
-        run: |
-          pacman -Syu --noconfirm base-devel sudo clang llvm lld
-          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          chown user -R ..
-          chown user -R /tmp
-      - name: Compile Kernel
-        run: |
-          su user -c "yes '' | makepkg --noconfirm -s"
-      - name: Rename kernel config
-        run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: arch-kernel-packages-${{ env._cpusched }}
-          path: |
-            ${{ env.PKGDEST }}/*.pkg.tar*
-            kernelconfig*.txt
+#  build_kernel_self_hosted:
+#    name: Build Kernel on Self-Hosted
+#    env:
+#      _cpusched: ${{ inputs._cpusched }}
+#    runs-on: self-hosted
+#    container: archlinux:latest
+#
+#    steps:
+#      - name: Install git
+#        run: pacman -Syu --noconfirm git
+#      - name: Checkout main
+#        uses: actions/checkout@v4
+#      - name: Prepare for makepkg
+#        run: |
+#          pacman -Syu --noconfirm base-devel sudo clang llvm lld
+#          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+#          chown user -R ..
+#          chown user -R /tmp
+#      - name: Compile Kernel
+#        run: |
+#          su user -c "yes '' | makepkg --noconfirm -s"
+#      - name: Rename kernel config
+#        run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: arch-kernel-packages-${{ env._cpusched }}
+#          path: |
+#            ${{ env.PKGDEST }}/*.pkg.tar*
+#            kernelconfig*.txt

@@ -59,20 +59,20 @@ jobs:
     if: needs.kver-checks.outputs.latest_kernel != needs.kver-checks.outputs.latest_release
     runs-on: ubuntu-latest
 
-  build_self_hosted:
-    name: Build Kernel on Self-Hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        _cpusched: [bore, eevdf]
-        os: [arch, ubuntu, fedora]
-    uses: ./.github/workflows/builder-dispatcher.yml
-    with:
-      _cpusched: ${{ matrix._cpusched }}
-      os: ${{ matrix.os }}
-    needs: [kver-checks]
-    if: needs.kver-checks.outputs.latest_kernel != needs.kver-checks.outputs.latest_release
-    runs-on: self-hosted
+#  build_self_hosted:
+#    name: Build Kernel on Self-Hosted
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        _cpusched: [bore, eevdf]
+#        os: [arch, ubuntu, fedora]
+#    uses: ./.github/workflows/builder-dispatcher.yml
+#    with:
+#      _cpusched: ${{ matrix._cpusched }}
+#      os: ${{ matrix.os }}
+#    needs: [kver-checks]
+#    if: needs.kver-checks.outputs.latest_kernel != needs.kver-checks.outputs.latest_release
+#    runs-on: self-hosted
 
   make-release:
 
@@ -81,8 +81,9 @@ jobs:
     needs:
       - kver-checks
       - build_ubuntu
-      - build_self_hosted
-    if: needs.build_ubuntu.result == 'success' || needs.build_self_hosted.result == 'success'
+#      - build_self_hosted
+#    if: needs.build_ubuntu.result == 'success' || needs.build_self_hosted.result == 'success'
+    if: needs.build_ubuntu.result == 'success'
 
     steps:
       - name: Checkout main
