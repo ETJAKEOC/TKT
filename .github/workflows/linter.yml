@@ -16,9 +16,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache
-          key: ${{ runner.os }}-linter-${{ hashFiles('**/*.yml') }}
+          key: ${{ runner.os }}-linter-${{ hashFiles('**/*.yml', '**/*.yaml') }}
           restore-keys: |
             ${{ runner.os }}-linter-
+            ${{ runner.os }}-
 
       - name: Lint Code Base
         uses: github/super-linter/slim@v7
