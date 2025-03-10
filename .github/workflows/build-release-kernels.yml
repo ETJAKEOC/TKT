@@ -15,39 +15,34 @@ jobs:
       latest_kernel: ${{ steps.versions.outputs.latest_kernel }}
 
     steps:
-      # Get latest release in repo, so we compare its version
-      # with the latest kernel available so far
       - name: Get latest release
         id: latest_release
         uses: pozetroninc/github-action-get-latest-release@master
         with:
           repository: ${{ github.repository }}
-        # it fails when there's no release
         continue-on-error: true
 
-      - name: Checkout linux-tkg
+      - name: Checkout main
         uses: actions/checkout@v4
 
-      - name: Get latest kernel version
+     - name: Get latest kernel version
         id: versions
         run: |
-          get_latest_kernel() {
-            git -c 'versionsort.suffix=-' \
-            ls-remote --exit-code --refs --sort='version:refname' --tags https://github.com/gregkh/linux.git '*.*' \
-            | cut --delimiter='/' --fields=3 | grep "$1" | tail -n 1
-          }
+             get_latest_kernel() {
+             git -c "versionsort.suffix=-" \
+             ls-remote --exit-code --refs --sort="version:refname" --tags https://github.com/torvalds/linux.git "*.*" \
+             | cut --delimiter="/" --fields=3 | grep "$1" | tail -n 1
+             }
 
-          grep "_current_kernels=(" linux-tkg-config/prepare > current_kernels.txt
-          source current_kernels.txt
+      grep "_current_kernels=(" kconfigs/prepare > current_kernels.txt
+      source current_kernels.txt
 
-          latest_kernel=`get_latest_kernel "${_current_kernels[0]}"`
-          if [[ "$latest_kernel" =~ "rc" ]]
-          then
-            latest_kernel=`get_latest_kernel "${_current_kernels[1]}"`
-          fi
-
-          echo "latest_kernel=$latest_kernel" >> $GITHUB_OUTPUT
-
+      latest_kernel=$(get_latest_kernel "${_current_kernels[0]}")
+      if [[ "$latest_kernel" =~ "rc" ]]
+      then
+        latest_kernel=$(get_latest_kernel "${_current_kernels[1]}")
+      fi
+      echo "latest_kernel=\"$latest_kernel\"" >> $GITHUB_OUTPUT
   build:
     strategy:
       fail-fast: false
@@ -72,7 +67,7 @@ jobs:
     if: needs.build.result == 'success'
 
     steps:
-      - name: Checkout linux-tkg
+      - name: Checkout main
         uses: actions/checkout@v4
 
       - name: Download release artifacts
