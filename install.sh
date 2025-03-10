@@ -61,7 +61,7 @@ if [[ "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
   exit
 fi
 
-source linux-tkg-config/prepare
+source kconfigs/prepare
 
 ####################################################################
 
@@ -78,13 +78,13 @@ _install_dependencies() {
   fi
   if [ "$_distro" = "Debian" -o "$_distro" = "Ubuntu" ]; then
     msg2 "Installing dependencies"
-    sudo apt install bc bison build-essential ccache cpio fakeroot flex git kmod libelf-dev libncurses5-dev libssl-dev lz4 qtbase5-dev rsync schedtool wget zstd debhelper ${clang_deps} -y
+    sudo apt install bc bison build-essential ccache cpio curl fakeroot flex git kmod libelf-dev libncurses-dev libssl-dev lz4 qtbase5-dev rsync schedtool wget zstd debhelper ${clang_deps} -y
   elif [ "$_distro" = "Fedora" ]; then
     msg2 "Installing dependencies"
-    sudo dnf install openssl-devel-engine hostname perl bison ccache dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync -y ${clang_deps} -y
+    sudo dnf install openssl-devel-engine hostname perl bison ccache curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync -y ${clang_deps} -y
   elif [ "$_distro" = "Suse" ]; then
     msg2 "Installing dependencies"
-    sudo zypper install -y hostname bc bison ccache dwarves elfutils flex gcc-c++ git libXi-devel libelf-devel libqt5-qtbase-common-devel libqt5-qtbase-devel lz4 make ncurses-devel openssl-devel patch pesign rpm-build rpmdevtools schedtool python3 rsync zstd ${clang_deps}
+    sudo zypper install -y bc bison ccache curl dwarves elfutils flex gcc-c++ git hostname libXi-devel libelf-devel libqt5-qtbase-common-devel libqt5-qtbase-devel lz4 make ncurses-devel openssl-devel patch pesign rpm-build rpmdevtools schedtool python3 rsync zstd ${clang_deps}
   fi
 }
 
@@ -154,7 +154,7 @@ if [ "$1" = "install" ]; then
   if [ "$_force_all_threads" = "true" ]; then
     _thread_num=`nproc`
   else
-    _thread_num=`expr \`nproc\` / 4`
+    _thread_num=`expr \`nproc\` - 4`
     if [ "$_thread_num" = "0" ]; then
       _thread_num=1
     fi
@@ -171,12 +171,12 @@ if [ "$1" = "install" ]; then
 
   if [ -z "$_kernel_localversion" ]; then
     if [ "$_preempt_rt" = "1" ]; then
-      _kernel_flavor="tkg-${_cpusched}-rt${_compiler_name}"
+      _kernel_flavor="${_cpusched}-rt${_compiler_name}"
     else
-      _kernel_flavor="tkg-${_cpusched}${_compiler_name}"
+      _kernel_flavor="${_cpusched}${_compiler_name}"
     fi
   else
-    _kernel_flavor="tkg-${_kernel_localversion}"
+    _kernel_flavor="${_kernel_localversion}"
   fi
 
   # Setup kernel_subver variable
@@ -206,7 +206,7 @@ if [ "$1" = "install" ]; then
     cd "$_where"
     mkdir -p DEBS
 
-    # Move deb files to DEBS folder inside the linux-tkg folder
+    # Move deb files to DEBS folder inside the TKT folder
     mv "$_build_dir"/*.deb "$_where"/DEBS/
 
     # Install only the winesync header in whatever kernel src there is, if there is
@@ -256,8 +256,8 @@ if [ "$1" = "install" ]; then
     cd "$_where"
     mkdir -p RPMS
 
-    # Move rpm files to RPMS folder inside the linux-tkg folder
-    mv ${_fedora_work_dir}/RPMS/x86_64/*tkg* "$_where"/RPMS/
+    # Move rpm files to RPMS folder inside the TKT folder
+    mv ${_fedora_work_dir}/RPMS/x86_64/* "$_where"/RPMS/
 
     # Install only the winesync header in whatever kernel src there is, if there is
     if [ -e "${_where}/winesync.rules" ]; then
@@ -437,23 +437,23 @@ if [ "$1" = "uninstall-help" ]; then
   cd "$_where"
 
   if [[ "$_distro" =~ ^(Ubuntu|Debian)$ ]]; then
-    msg2 "List of installed custom tkg kernels: "
-    dpkg -l "*tkg*" | grep "linux.*tkg"
-    dpkg -l "*linux-libc-dev*" | grep "linux.*tkg"
+    msg2 "List of installed custom TKT kernels: "
+    dpkg -l "*" | grep "linux.*"
+    dpkg -l "*linux-libc-dev*" | grep "linux.*"
     msg2 "To uninstall a version, you should remove the linux-image, linux-headers and linux-libc-dev associated to it (if installed), with: "
     msg2 "      sudo apt remove linux-image-VERSION linux-headers-VERSION linux-libc-dev-VERSION"
     msg2 "       where VERSION is displayed in the lists above, uninstall only versions that have \"tkg\" in its name"
     msg2 "Note: linux-libc-dev packages are no longer created and installed, you can safely remove any remnants."
   elif [ "$_distro" = "Fedora" ]; then
-    msg2 "List of installed custom tkg kernels: "
-    dnf list --installed | grep -i "tkg"
+    msg2 "List of installed custom TKT kernels: "
+    dnf list --installed | grep -i "tkt"
     msg2 "To uninstall a version, you should remove the kernel, kernel-headers and kernel-devel associated to it (if installed), with: "
     msg2 "      sudo dnf remove --noautoremove kernel-VERSION kernel-devel-VERSION kernel-headers-VERSION"
     msg2 "       where VERSION is displayed in the second column"
     msg2 "Note: kernel-headers packages are no longer created and installed, you can safely remove any remnants."
   elif [ "$_distro" = "Suse" ]; then
-    msg2 "List of installed custom tkg kernels: "
-    zypper packages --installed-only | grep "kernel.*tkg"
+    msg2 "List of installed custom TKT kernels: "
+    zypper packages --installed-only | grep "kernel.*"
     msg2 "To uninstall a version, you should remove the kernel, kernel-headers and kernel-devel associated to it (if installed), with: "
     msg2 "      sudo zypper remove --no-clean-deps kernel-VERSION kernel-devel-VERSION kernel-headers-VERSION"
     msg2 "       where VERSION is displayed in the second to last column"
