@@ -15,7 +15,6 @@ jobs:
       with:
         node-version: '14'
         cache: 'npm'
-        key: ${{ runner.os }}-node-${{ hashFiles('.github/workflows/package-lock.json') }}
 
     - name: Cache NPM dependencies
       id: cache-npm
