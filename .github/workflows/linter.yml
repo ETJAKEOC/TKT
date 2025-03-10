@@ -17,19 +17,11 @@ jobs:
         cache: 'npm'
         cache: 'eslint'
 
-    - name: Verify package-lock.json
-      run: |
-        if [ ! -f package-lock.json ]; then
-          echo "package-lock.json not found";
-          exit 1;
-        fi
-
     - name: Cache NPM dependencies
        uses: actions/cache@v4
        path: ~/.npm
        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-       restore-keys: |
-                     ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+       restore-keys: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
 
     - name: Install dependencies
       if: steps.cache-npm.outputs.cache-hit != 'true'
