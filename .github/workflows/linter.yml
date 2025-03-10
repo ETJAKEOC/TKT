@@ -16,6 +16,13 @@ jobs:
         node-version: '18'
         cache: 'npm'
 
+    - name: Verify package-lock.json
+      run: |
+        if [ ! -f package-lock.json ]; then
+          echo "package-lock.json not found";
+          exit 1;
+        fi
+
     - name: Cache NPM dependencies
       id: cache-npm
       uses: actions/cache@v4

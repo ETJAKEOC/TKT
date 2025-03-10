@@ -27,8 +27,19 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^2.2.0",
+    "@eslint-community/eslint-utils": "^4.4.1",
+    "@eslint/eslintrc": "^3.3.0",
+    "@humanwhocodes/module-importer": "^1.0.1",
+    "@humanwhocodes/retry": "^0.3.1",
     "@octokit/rest": "^21.0.2",
-    "eslint": "^9.22.0"
+    "ajv": "^6.12.6",
+    "ansi-styles": "^4.3.0",
+    "chalk": "^4.1.2",
+    "eslint": "^9.22.0",
+    "eslint-scope": "^8.3.0",
+    "eslint-visitor-keys": "^4.2.0",
+    "espree": "^10.3.0",
+    "fast-content-type-parse": "^2.0.1"
   },
   "type": "commonjs"
 }
