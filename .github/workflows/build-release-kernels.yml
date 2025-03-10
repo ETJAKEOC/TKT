@@ -42,7 +42,7 @@ jobs:
       then
         latest_kernel=$(get_latest_kernel "${_current_kernels[1]}")
       fi
-      echo "latest_kernel=\"$latest_kernel\"" >> $GITHUB_OUTPUT
+      echo "latest_kernel=\'$latest_kernel\'" >> $GITHUB_OUTPUT
   build:
     strategy:
       fail-fast: false
