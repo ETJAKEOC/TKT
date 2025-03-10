@@ -5,7 +5,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   update-kernel-config:
     runs-on: ubuntu-latest
     strategy:
@@ -17,6 +16,14 @@ jobs:
           - https://gitlab.archlinux.org/archlinux/packaging/packages/linux-lts
 
     steps:
+      - name: Cache git
+        uses: actions/cache@v4
+        with:
+          path: ~/.git-cache
+          key: ${{ runner.os }}-git-${{ hashFiles('**/config') }}
+          restore-keys: |
+            ${{ runner.os }}-git-
+
       - name: Get latest config file version upstream
         id: upstream-config
         run: |
@@ -25,6 +32,7 @@ jobs:
           | cut --delimiter="/" --fields=3 | tail -n 1 > latest-upstream-config
           echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
           echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
+
       - name: Checkout main
         uses: actions/checkout@v4
 
@@ -39,6 +47,7 @@ jobs:
           else
             echo "config-updated=1" >> $GITHUB_OUTPUT
           fi
+
       - name: Push changes
         if: steps.update-config.outputs.config-updated == '1'
         run: |

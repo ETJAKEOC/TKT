@@ -11,6 +11,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Cache linter
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache
+          key: ${{ runner.os }}-linter-${{ hashFiles('**/*.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-linter-
+
       - name: Lint Code Base
         uses: github/super-linter/slim@v7
         env:
