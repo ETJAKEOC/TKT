@@ -28,11 +28,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install clang, llvm, and lld
+      - name: Install dependencies
         run: |
           sudo echo 'deb-src http://azure.archive.ubuntu.com/ubuntu noble main universe multiverse restricted' | sudo tee /etc/apt/sources.list.d/deb-src.list
           sudo apt-get update
-          sudo apt install -y clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm libclang-cpp18 libclang1-18 clang-18 libllvm18
+          sudo apt install -y clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm libclang-cpp18 libclang1-18 clang-18 libllvm18 ccache qt5-qmake schedtool
           sudo apt-get build-dep linux
 
       - name: Checkout main
