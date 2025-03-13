@@ -20,13 +20,13 @@ jobs:
           repository: ${{ github.repository }}
         continue-on-error: true
 
-      - name: Checkout main
-        uses: actions/checkout@v4
-
       - name: Update sources list
         run: |
           sudo echo 'deb-src http://azure.archive.ubuntu.com/ubuntu noble main universe multiverse restricted' | sudo tee /etc/apt/sources.list.d/deb-src.list
           sudo apt-get update && sudo apt remove --purge firefox && sudo apt-get upgrade -y
+
+      - name: Checkout main
+        uses: actions/checkout@v4
 
       - name: Get latest kernel version
         id: versions

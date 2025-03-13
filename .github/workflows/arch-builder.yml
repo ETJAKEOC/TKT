@@ -33,18 +33,16 @@ jobs:
     steps:
 
       - name: Pacman prep
-        run: |
-          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          chown user -R ..
-          chown user -R /tmp
-          pacman -Syu --noconfirm
-          pacman -Sy --noconfirm git base-devel clang llvm lld
+        run: pacman -Syu --noconfirm git base-devel clang llvm lld
 
       - name: Checkout main
         uses: actions/checkout@v4
 
       - name: Compile Kernel
         run: |
+          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown user -R ..
+          chown user -R /tmp
           su user -c "yes '' | makepkg --noconfirm -sC"
 
       - name: rename kernel config
