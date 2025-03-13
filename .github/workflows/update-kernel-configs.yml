@@ -13,8 +13,7 @@ jobs:
       max-parallel: 8
       matrix:
         link:
-          - https://gitlab.archlinux.org/archlinux/packaging/packages/linux
-          - https://gitlab.archlinux.org/archlinux/packaging/packages/linux-lts
+          - https://github.com/ETJAKEOC/TKT
 
     steps:
       - name: Get latest config file version upstream
@@ -32,7 +31,7 @@ jobs:
         id: update-config
         run: |
           cd kconfigs/${{ steps.upstream-config.outputs.kver }}
-          wget ${{ matrix.link }}/-/raw/main/config -O config.x86_64
+          wget ${{ matrix.link }}/kconfigs/6.13/config.x86_64 -O config.x86_64
           if git diff --exit-code config.x86_64
           then
             echo "config-updated=0" >> $GITHUB_OUTPUT

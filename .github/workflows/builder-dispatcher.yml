@@ -10,11 +10,11 @@ on:
         type: string
 
 jobs:
-  dispatch-to-fedora:
-    uses: ./.github/workflows/fedora-builder.yml
+  dispatch-to-arch:
+    uses: ./.github/workflows/arch-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
-    if: inputs.os == 'fedora'
+    if: inputs.os == 'arch'
 
   dispatch-to-ubuntu:
     uses: ./.github/workflows/ubuntu-builder.yml
@@ -22,8 +22,8 @@ jobs:
       _cpusched: ${{ inputs._cpusched }}
     if: inputs.os == 'ubuntu'
 
-  dispatch-to-arch:
-    uses: ./.github/workflows/arch-builder.yml
+  dispatch-to-fedora:
+    uses: ./.github/workflows/fedora-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
-    if: inputs.os == 'arch'
+    if: inputs.os == 'fedora'
