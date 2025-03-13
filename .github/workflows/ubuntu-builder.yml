@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo echo 'deb-src http://azure.archive.ubuntu.com/ubuntu noble main universe multiverse restricted' | sudo tee /etc/apt/sources.list.d/deb-src.list
-          sudo apt-get update && sudo apt upgrade
+          sudo apt-get update && && sudo apt remove --purge firefox && sudo apt upgrade
           sudo apt install -y clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm libclang-cpp18 libclang1-18 clang-18 libllvm18 ccache qt5-qmake schedtool asciidoc asciidoc-base asciidoc-common autopoint \
           bindgen-0.65 build-essential ca-certificates-java debhelper default-jdk-headless default-jre-headless dh-autoreconf dh-strip-nondeterminism dkms docbook-xml docbook-xsl docutils-common dwz gettext intltool-debian libarchive-zip-perl \
           libaudit-dev libcap-dev libcap-ng-dev libdebhelper-perl libdw-dev libelf-dev libfile-stripnondeterminism-perl libiberty-dev liblzma-dev libnewt-dev libnuma-dev libpci-dev libpcsclite1 libpng-dev libslang2-dev libstd-rust-1.75 libstd-rust-dev \
