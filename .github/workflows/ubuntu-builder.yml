@@ -39,7 +39,8 @@ jobs:
           libdouble-conversion3 libegl-dev libegl-mesa0 libegl1 libgl-dev libglu1-mesa libglu1-mesa-dev libglx-dev libinput-bin libinput10 libmd4c0 libmtdev1t64 libopengl-dev libopengl0 libpthread-stubs0-dev libqt5concurrent5t64 \
           libqt5core5t64 libqt5dbus5t64 libqt5gui5t64 libqt5network5t64 libqt5opengl5-dev libqt5opengl5t64 libqt5printsupport5t64 libqt5qml5 libqt5qmlmodels5 libqt5quick5 libqt5sql5-sqlite libqt5sql5t64 libqt5svg5 libqt5test5t64 libqt5waylandclient5 \
           libqt5waylandcompositor5 libqt5widgets5t64 libqt5xml5t64 libvulkan-dev libwacom-common libwacom9 libx11-dev libxau-dev libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-util1 libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 \
-          libxcb1-dev libxdmcp-dev libxext-dev libxkbcommon-x11-0 qt5-gtk-platformtheme qtbase5-dev-tools qttranslations5-l10n qtwayland5 x11proto-dev xorg-sgml-doctools xtrans-dev
+          libxcb1-dev libxdmcp-dev libxext-dev libxkbcommon-x11-0 qt5-gtk-platformtheme qtbase5-dev-tools qttranslations5-l10n qtwayland5 x11proto-dev xorg-sgml-doctools xtrans-dev bc bison build-essential cpio curl fakeroot flex git kmod libelf-dev \
+          libncurses-dev libssl-dev lz4 qtbase5-dev rsync schedtool wget zstd debhelper
           sudo apt-get build-dep linux
 
       - name: Checkout main
