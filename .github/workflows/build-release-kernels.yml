@@ -17,7 +17,7 @@ jobs:
         id: latest_release
         uses: pozetroninc/github-action-get-latest-release@master
         with:
-          repository: torvalds/linux@master
+          repo: 'torvalds/linux'
         continue-on-error: true
 
       - name: Update sources list
