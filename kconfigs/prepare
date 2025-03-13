@@ -720,8 +720,15 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _msg="Applying glitched base non-rt additions patch" && _tkg_patcher
   fi
 
-  tkgpatch="$srcdir/0013-fedora-rpm.patch"
-  _msg="RPM: fixing spec generator" && _tkg_patcher
+  if [ "$_distro" = "Fedora" ]; then
+    tkgpatch="$srcdir/0013-fedora-rpm.patch"
+    _msg="RPM: fixing spec generator" && _tkg_patcher
+
+    if [ "$_compiler" = "llvm" ]; then
+      tkgpatch="$srcdir/0014-fedora-clang.patch"
+      _msg="Fedora: applying Clang compatibility patch" && _tkg_patcher
+    fi
+  fi
 
   if [ "$_distro" = "Suse" ]; then
     tkgpatch="$srcdir/0013-suse-additions.patch"
