@@ -33,7 +33,7 @@ jobs:
     steps:
 
       - name: Pacman prep
-        run: pacman -Syu --noconfirm git base-devel clang llvm lld
+        run: pacman -Syu --noconfirm git base-devel clang llvm lld bison xmlto docbook-xsl inetutils bc libelf pahole patchutils flex python-sphinx python-sphinx_rtd_theme graphviz imagemagick cpio perl tar xz wget schedtool
 
       - name: Checkout main
         uses: actions/checkout@v4
