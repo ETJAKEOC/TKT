@@ -32,22 +32,18 @@ jobs:
 
     steps:
 
-      - name: Install git
-        run: pacman -Syu --noconfirm git
+      - name: Pacman prep
+        run: pacman -Syu --noconfirm git base-devel clang llvm lld bison xmlto docbook-xsl inetutils bc libelf pahole patchutils flex python-sphinx python-sphinx_rtd_theme graphviz imagemagick cpio perl tar xz wget schedtool
 
       - name: Checkout main
         uses: actions/checkout@v4
 
-      - name: Prepare for makepkg
+      - name: Compile Kernel
         run: |
-          pacman -Syu --noconfirm base-devel sudo clang llvm lld
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R ..
           chown user -R /tmp
-
-      - name: Compile Kernel
-        run: |
-          su user -c "yes '' | makepkg --noconfirm -s"
+          su user -c "yes '' | makepkg --noconfirm -sC"
 
       - name: rename kernel config
         run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"

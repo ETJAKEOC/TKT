@@ -272,6 +272,8 @@ hackheaders() {
   mkdir -p "$pkgdir/usr/src"
   ln -sf "$builddir" "$pkgdir/usr/src/$pkgbase"
 
+#  cp -an "$kernel_work_folder_abs/tools/*" "$pkgdir/usr/lib/modules/build/tools/"
+
   if [ "$_STRIP" = "true" ]; then
     echo "Stripping vmlinux..."
     strip -v $STRIP_STATIC "$builddir/vmlinux"

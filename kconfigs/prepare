@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of kernels that are maintained upstream
-_current_kernels=("6.14" "6.13" "6.12" "6.6" "6.1")
+_current_kernels=("6.15" "6.14" "6.13" "6.12" "6.6" "6.1")
 
 # List of kernels that are no longer maintained either upstream or locally
 _eol_kernels=("6.11" "6.10" "6.9" "6.8" "6.7" "6.5" "6.4" "6.3" "6.2" "6.0")
@@ -720,8 +720,15 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _msg="Applying glitched base non-rt additions patch" && _tkg_patcher
   fi
 
-  tkgpatch="$srcdir/0013-fedora-rpm.patch"
-  _msg="RPM: fixing spec generator" && _tkg_patcher
+  if [ "$_distro" = "Fedora" ]; then
+    tkgpatch="$srcdir/0013-fedora-rpm.patch"
+    _msg="RPM: fixing spec generator" && _tkg_patcher
+
+    if [ "$_compiler" = "llvm" ]; then
+      tkgpatch="$srcdir/0014-fedora-clang.patch"
+      _msg="Fedora: applying Clang compatibility patch" && _tkg_patcher
+    fi
+  fi
 
   if [ "$_distro" = "Suse" ]; then
     tkgpatch="$srcdir/0013-suse-additions.patch"
@@ -869,8 +876,15 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
 
   fi
 
-  _msg="Applying ETJAKEOC's Memory patch"
-  tkgpatch="$srcdir/0015-ETJAKEOC-Memory.patch" && _tkg_patcher
+  # Proactively apply all patches that contain 'ETJAKEOC' in their filename
+  for patch in "$srcdir"/*ETJAKEOC*.patch; do
+      if [[ -f "$patch" ]]; then
+          _msg="Applying ETJAKEOC patch: $(basename "$patch")"
+          echo "$_msg"
+          tkgpatch="$patch" && _tkg_patcher
+      fi
+  done
+
 
   if [ -z "${_configfile}" ]; then
     msg2 "Using archlinux's default config file for kernel ${_basekernel}"
@@ -1796,7 +1810,11 @@ fi
 
   # Modify the kernel config file to fit Fedora SELinux configuration
   if [ "$_distro" = "Fedora" ] ; then
-    msg2 "SELinux activation for Fedora"
+	if [ "$_compiler" = "llvm" ] ; then
+		msg2 "Patching CFLAGS for Clang..."
+		sed -i 's/CFLAGS += -E/CFLAGS += /' scripts/gdb/linux/Makefile
+	fi
+    msg2 "SELinux activation for Fedora..."
     _enable "AUDIT"
     _enable "SECURITY_SELINUX"
     _enable "DEFAULT_SECURITY_SELINUX"
