@@ -33,7 +33,9 @@ jobs:
 
     steps:
       - name: Install clang, llvm, and lld
-        run: sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm && sudo apt-get build-dep linux
+        run: |
+          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+          sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm && sudo apt-get build-dep linux
 
       - name: Checkout main
         uses: actions/checkout@v4
