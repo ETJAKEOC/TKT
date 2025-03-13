@@ -35,7 +35,11 @@ jobs:
           sudo apt install -y clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm libclang-cpp18 libclang1-18 clang-18 libllvm18 ccache qt5-qmake schedtool asciidoc asciidoc-base asciidoc-common autopoint \
           bindgen-0.65 build-essential ca-certificates-java debhelper default-jdk-headless default-jre-headless dh-autoreconf dh-strip-nondeterminism dkms docbook-xml docbook-xsl docutils-common dwz gettext intltool-debian libarchive-zip-perl \
           libaudit-dev libcap-dev libcap-ng-dev libdebhelper-perl libdw-dev libelf-dev libfile-stripnondeterminism-perl libiberty-dev liblzma-dev libnewt-dev libnuma-dev libpci-dev libpcsclite1 libpng-dev libslang2-dev libstd-rust-1.75 libstd-rust-dev \
-          libsub-override-perl libudev-dev libunwind-dev libxml2-utils makedumpfile openjdk-21-jdk-headless openjdk-21-jre-headless pahole po-debconf python3-docutils python3-roman rust-src rustc rustfmt sgml-data sharutils uuid-dev xmlto xsltproc
+          libsub-override-perl libudev-dev libunwind-dev libxml2-utils makedumpfile openjdk-21-jdk-headless openjdk-21-jre-headless pahole po-debconf python3-docutils python3-roman rust-src rustc rustfmt sgml-data sharutils uuid-dev xmlto xsltproc \
+          libdouble-conversion3 libegl-dev libegl-mesa0 libegl1 libgl-dev libglu1-mesa libglu1-mesa-dev libglx-dev libinput-bin libinput10 libmd4c0 libmtdev1t64 libopengl-dev libopengl0 libpthread-stubs0-dev libqt5concurrent5t64 \
+          libqt5core5t64 libqt5dbus5t64 libqt5gui5t64 libqt5network5t64 libqt5opengl5-dev libqt5opengl5t64 libqt5printsupport5t64 libqt5qml5 libqt5qmlmodels5 libqt5quick5 libqt5sql5-sqlite libqt5sql5t64 libqt5svg5 libqt5test5t64 libqt5waylandclient5 \
+          libqt5waylandcompositor5 libqt5widgets5t64 libqt5xml5t64 libvulkan-dev libwacom-common libwacom9 libx11-dev libxau-dev libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-util1 libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 \
+          libxcb1-dev libxdmcp-dev libxext-dev libxkbcommon-x11-0 qt5-gtk-platformtheme qtbase5-dev-tools qttranslations5-l10n qtwayland5 x11proto-dev xorg-sgml-doctools xtrans-dev
           sudo apt-get build-dep linux
 
       - name: Checkout main
