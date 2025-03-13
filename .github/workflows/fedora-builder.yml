@@ -30,8 +30,10 @@ jobs:
     container: fedora:latest
 
     steps:
-      - name: Install depends
-        run: dnf install -y git clang llvm lld gcc-c++ openssl-devel-engine hostname perl bison ccache curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync
+      - name: Setup dev env
+        run: |
+          dnf update && dnf upgrade -y
+          dnf install -y git clang llvm lld gcc-c++ openssl-devel-engine hostname perl bison ccache curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync
 
       - name: Checkout main
         uses: actions/checkout@v4

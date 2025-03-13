@@ -45,7 +45,7 @@ jobs:
 
       - name: Compile Kernel
         run: |
-          su user -c "yes '' | makepkg --noconfirm -s"
+          su user -c "yes '' | makepkg --noconfirm -sC"
 
       - name: rename kernel config
         run: mv kernelconfig.new "kernelconfig.arch.${{ env._cpusched }}.txt"
