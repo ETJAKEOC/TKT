@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Install clang, llvm, and lld
         run: |
-          sudo echo 'deb-src https://ftp.us.debian.org/debian sid main' | sudo tee /etc/apt/sources.list.d/deb-src.list
+          sudo echo 'deb-src http://azure.archive.ubuntu.com/ubuntu noble main universe multiverse restricted' | sudo tee /etc/apt/sources.list.d/deb-src.list
           sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm && sudo apt-get build-dep linux
 
       - name: Checkout main
