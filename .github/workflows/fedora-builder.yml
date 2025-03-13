@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Install depends
-        run: dnf install -y git clang llvm lld qt3-devel libXi-devel gcc-c++ ccache flex bison make openssl-devel elf-utils-libelf-devel ncurses-devel rpmdevtools fedora-packager
+        run: dnf install -y git clang llvm lld qt3-devel libXi-devel gcc-c++ ccache flex bison make openssl-devel ncurses-devel rpmdevtools fedora-packager
 
       - name: Checkout main
         uses: actions/checkout@v4
