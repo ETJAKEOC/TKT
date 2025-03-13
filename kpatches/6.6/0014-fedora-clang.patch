@@ -1,5 +1,5 @@
---- Makefile.orig	2025-03-13 10:22:36.309744246 -0400
-+++ Makefile	2025-03-13 10:22:44.900683930 -0400
+--- scripts/gdb/linux/Makefile	2025-03-13 10:22:36.309744246 -0400
++++ scripts/gdb/linux/Makefile	2025-03-13 10:22:44.900683930 -0400
 @@ -15,7 +15,7 @@
  
  quiet_cmd_gen_constants_py = GEN     $@
