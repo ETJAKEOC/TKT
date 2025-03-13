@@ -5,8 +5,6 @@ on:
       _cpusched:
         required: false
         type: string
-
-
 env:
   _processor_opt: "generic"
   _distro: "Ubuntu"
@@ -22,8 +20,6 @@ env:
   # _modprobeddb: "true"
   _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
 
-
-
 jobs:
   build-kernel:
     env:
@@ -35,7 +31,9 @@ jobs:
       - name: Install clang, llvm, and lld
         run: |
           sudo echo 'deb-src http://azure.archive.ubuntu.com/ubuntu noble main universe multiverse restricted' | sudo tee /etc/apt/sources.list.d/deb-src.list
-          sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm && sudo apt-get build-dep linux
+          sudo apt-get update
+          sudo apt install -y clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm libclang-cpp18 libclang1-18 clang-18 libllvm18
+          sudo apt-get build-dep linux
 
       - name: Checkout main
         uses: actions/checkout@v4
