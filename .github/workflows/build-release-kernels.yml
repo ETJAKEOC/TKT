@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-  kver-checks: |
+  kver-checks:
     runs-on: ubuntu-latest
     outputs:
       latest_release: ${{ steps.latest_release.outputs.release }}
