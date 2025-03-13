@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Install clang, llvm, and lld
         run: |
-          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+          su -c "echo 'deb-src https://ftp.us.debian.org/debian sid main contrib non-free non-free-firmware' >> /etc/apt/sources.list"
           sudo apt-get update && sudo apt install -y clang clangd clang-tidy clang-format clang-tools libclang-dev libclang-cpp-dev lldb lld llvm && sudo apt-get build-dep linux
 
       - name: Checkout main
