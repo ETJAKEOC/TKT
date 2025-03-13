@@ -32,18 +32,16 @@ jobs:
 
     steps:
 
-      - name: Install git
-        run: pacman -Syu --noconfirm git
-
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Prepare for makepkg
+      - name: Pacman prep
         run: |
-          pacman -Syu --noconfirm base-devel sudo clang llvm lld
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R ..
           chown user -R /tmp
+          pacman -Syu --noconfirm
+          pacman -Sy --noconfirm git base-devel clang llvm lld
+
+      - name: Checkout main
+        uses: actions/checkout@v4
 
       - name: Compile Kernel
         run: |

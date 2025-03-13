@@ -30,11 +30,8 @@ jobs:
     container: fedora:latest
 
     steps:
-      - name: Install git (needed for checkout)
-        run: dnf install git -y
-
-      - name: Install clang, llvm, and lld
-        run: sudo dnf install -y clang llvm lld
+      - name: Install depends
+        run: dnf install -y git clang llvm lld qt3-devel libXi-devel gcc-c++ ccache flex bison make openssl-devel elf-utils-libelf-devel ncurses-devel rpmdevtools fedora-packager
 
       - name: Checkout main
         uses: actions/checkout@v4
