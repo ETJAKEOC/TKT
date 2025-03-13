@@ -22,6 +22,11 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
+      - name: Update sources list
+        run: |
+          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+          sudo apt-get update
+
       - name: Get latest kernel version
         id: versions
         run: |
