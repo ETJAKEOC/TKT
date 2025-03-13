@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       _cpusched:
-        required: false
+        required: true
         type: string
 
 env:
