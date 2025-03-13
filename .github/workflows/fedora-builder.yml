@@ -55,6 +55,9 @@ jobs:
       - name: rename kernel config
         run: mv kernelconfig.new "kernelconfig.fedora.${{ env._cpusched }}.txt"
 
+      - name: Remove -E flag from Makefile
+        run: sed -i 's/CFLAGS += -E/# CFLAGS += -E/' scripts/gdb/linux/Makefile
+
       - uses: actions/upload-artifact@v4
         with:
           name: fedora-kernel-packages-$(env._cpusched)
