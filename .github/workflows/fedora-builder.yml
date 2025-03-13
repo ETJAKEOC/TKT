@@ -49,9 +49,6 @@ jobs:
         run: |
           yes '' | ./install.sh install
 
-      - name: Remove -E flag from Makefile
-        run: sed -i 's/CFLAGS += -E/# CFLAGS += -E/' scripts/gdb/linux/Makefile
-
       - name: Cleanup useless RPM files
         run: rm -rf RPMS/*kernel-headers*.rpm
 
