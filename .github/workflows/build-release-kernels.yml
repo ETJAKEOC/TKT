@@ -50,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        _cpusched: bore
+        _cpusched: [bore]
         os: [arch, ubuntu, fedora]
     uses: ./.github/workflows/builder-dispatcher.yml
     with:
