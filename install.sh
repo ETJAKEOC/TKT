@@ -115,6 +115,10 @@ if [ "$1" = "install" ] || [ "$1" = "config" ]; then
       export HOSTLDFLAGS="-unwindlib=libunwind"
   fi
 
+  if [[ "${_compiler}" = "llvm" && "${_distro}" = "Fedora" ]]; then
+      sed -i 's/CFLAGS += -E/CFLAGS += /' scripts/gdb/linux/Makefile
+  fi
+
   # Install the needed dependencies if the user wants to install the kernel
   # Not needed if the user asks for install.sh config
   if [ "$1" == "install" ]; then

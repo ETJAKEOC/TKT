@@ -1798,7 +1798,7 @@ fi
   if [ "$_distro" = "Fedora" ] ; then
 	if [ "$_compiler" = "llvm" ] ; then
 		msg2 "Patching CFLAGS for Clang..."
-		sed -i 's/CFLAGS += -E/# CFLAGS += -E/' scripts/gdb/linux/Makefile
+		sed -i 's/CFLAGS += -E/CFLAGS += /' scripts/gdb/linux/Makefile
 	fi
     msg2 "SELinux activation for Fedora..."
     _enable "AUDIT"
