@@ -27,3 +27,4 @@ gnupg/
 current_env
 linux-kernel.git/
 linux-src-git/
+kernelconfig.new
