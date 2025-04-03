@@ -876,8 +876,15 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
 
   fi
 
-  _msg="Applying ETJAKEOC's Memory patch"
-  tkgpatch="$srcdir/0015-ETJAKEOC-Memory.patch" && _tkg_patcher
+  # Proactively apply all patches that contain 'ETJAKEOC' in their filename
+  for patch in "$srcdir"/*ETJAKEOC*.patch; do
+      if [[ -f "$patch" ]]; then
+          _msg="Applying ETJAKEOC patch: $(basename "$patch")"
+          echo "$_msg"
+          tkgpatch="$patch" && _tkg_patcher
+      fi
+  done
+
 
   if [ -z "${_configfile}" ]; then
     msg2 "Using archlinux's default config file for kernel ${_basekernel}"
