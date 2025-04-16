@@ -226,50 +226,51 @@ _set_kver_internal_vars() {
 
 _set_kernel_version() {
 
-# Determine the latest mainline (non-RC) kernel version
-msg2 "Determining the latest mainline (non-RC) kernel version..."
-default_kernel_version=""
-for version in "${!_kver_latest_tags_map[@]}"; do
-    if [[ ! "${_kver_latest_tags_map["$version"]}" =~ -rc ]]; then
-        default_kernel_version="${_kver_latest_tags_map["$version"]}"
-        break
+    # Determine the latest mainline (non-RC) kernel version
+    msg2 "Determining the latest mainline (non-RC) kernel version..."
+    default_kernel_version=""
+    for version in "${!_kver_latest_tags_map[@]}"; do
+        if [[ ! "${_kver_latest_tags_map["$version"]}" =~ -rc ]]; then
+            default_kernel_version="${_kver_latest_tags_map["$version"]}"
+            break
+        fi
+    done
+
+    if [[ -z "$default_kernel_version" ]]; then
+        error "Unable to find a default mainline kernel version. Exiting."
+        exit 1
     fi
-done
 
-if [[ -z "$default_kernel_version" ]]; then
-    error "Unable to find a default mainline kernel version. Exiting."
-    exit 1
-fi
+    msg2 "Default kernel version: $default_kernel_version"
 
-msg2 "Default kernel version: $default_kernel_version"
+    # Prompt the user for a kernel version
+    msg2 "Available kernel versions:"
+    PS3="Select the kernel version you want (default: $default_kernel_version): "
+    select user_selection in "${!_kver_latest_tags_map[@]}"; do
+        if [[ -n "$user_selection" ]]; then
+            _kernel_git_tag="${_kver_latest_tags_map["$user_selection"]}"
+            msg2 "Using user-selected kernel version: $_kernel_git_tag"
+            break
+        elif [[ -z "$REPLY" ]]; then
+            _kernel_git_tag="$default_kernel_version"
+            msg2 "No selection made. Using default kernel version: $_kernel_git_tag"
+            break
+        else
+            error "Invalid selection. Please try again."
+        fi
+    done
 
-# Prompt the user for a kernel version
-msg2 "Available kernel versions:"
-PS3="Select the kernel version you want (default: $default_kernel_version): "
-select user_selection in "${!_kver_latest_tags_map[@]}"; do
-    if [[ -n "$user_selection" ]]; then
-        _kernel_git_tag="${_kver_latest_tags_map["$user_selection"]}"
-        msg2 "Using user-selected kernel version: $_kernel_git_tag"
-        break
-    elif [[ -z "$REPLY" ]]; then
-        _kernel_git_tag="$default_kernel_version"
-        msg2 "No selection made. Using default kernel version: $_kernel_git_tag"
-        break
+    # Validate and fetch the selected kernel version
+    if [[ -n "$_kernel_git_tag" ]]; then
+        msg2 "Retrieving kernel sources for version: $_kernel_git_tag"
+
+        # Write the selected kernel version to BIG_UGLY_FROGMINER
+        echo "_kernel_git_tag=$_kernel_git_tag" >> "$_where/BIG_UGLY_FROGMINER"
     else
-        error "Invalid selection. Please try again."
+        error "No valid kernel version selected or found."
+        exit 1
     fi
-done
-
-# Download the selected kernel sources
-if [[ -n "$_kernel_git_tag" ]]; then
-    msg2 "Retrieving kernel sources for version: $_kernel_git_tag"
-    # Add logic to fetch the sources here
-else
-    error "No valid kernel version selected or found."
-    exit 1
-fi
 }
-
 _set_cpu_scheduler() {
 
   [[ -z "$_kver" ]] && error "bug: _kver variable not defined but needed" && exit 1
