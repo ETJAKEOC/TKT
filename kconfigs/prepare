@@ -16,14 +16,13 @@ _kernel_git_remotes=(
 
 _git_remote_names=( "${!_kernel_git_remotes[@]}" )
 
-
 if [[ -z "$_git_mirror" ]]; then
-  msg2 "using default kernel.org git remote"
+  msg2 "Using default kernel.org git remote"
   _git_mirror="${_kernel_git_remotes['kernel.org']}"
 fi
 
 if [[ "${_git_remote_names[@]}" =~ "$_git_mirror" ]]; then
-  msg2 "using git mirror alias $_git_mirror"
+  msg2 "Using git mirror alias $_git_mirror"
   _git_mirror="${_kernel_git_remotes[$_git_mirror]}"
 fi
 
@@ -42,6 +41,50 @@ typeset -Ag _kver_latest_tags_map
 for _key in "${_current_kernels[@]}" "${_eol_kernels[@]}"; do
   _kver_latest_tags_map[$_key]=$(echo "$_kernel_tags" | grep -F "v$_key" | grep -v "v$_key"[0-9] | tail -1 | cut -c1-)
 done
+
+# Determine the latest mainline (non-RC) kernel version as the default
+default_kernel_version=""
+for version in "${_current_kernels[@]}"; do
+  if [[ ! "${_kver_latest_tags_map["$version"]}" =~ -rc ]]; then
+    default_kernel_version="${_kver_latest_tags_map["$version"]}"
+    break
+  fi
+done
+
+if [[ -z "$default_kernel_version" ]]; then
+  error "Unable to determine the latest mainline kernel version. Exiting."
+  exit 1
+fi
+
+msg2 "Default kernel version: $default_kernel_version"
+
+# Prompt the user for a kernel version
+_kernel_fullver_list=()
+for _key in "${_current_kernels[@]}"; do
+  _kernel_fullver_list+=("${_kver_latest_tags_map[$_key]}")
+done
+_kernel_fullver_list+=("Another (no longer maintained upstream)")
+
+msg2 "Which kernel version do you want to install?"
+PS3="Select a kernel version (default: $default_kernel_version): "
+select user_selection in "${_kernel_fullver_list[@]}"; do
+  if [[ -n "$user_selection" ]]; then
+    _kernel_git_tag="$user_selection"
+    break
+  elif [[ -z "$REPLY" ]]; then
+    _kernel_git_tag="$default_kernel_version"
+    msg2 "No selection made. Using default kernel version: $_kernel_git_tag"
+    break
+  else
+    error "Invalid selection. Please try again."
+  fi
+done
+
+# Validate the selected kernel tag
+if [[ -z "$_kernel_git_tag" ]] || ! echo "$_kernel_tags" | grep -E "^$_kernel_git_tag$" &> /dev/null; then
+  error "Tag '$_kernel_git_tag' not found in the remote git repository."
+  exit 1
+fi
 
 # PREEMPT_RT's supported kernel subversion
 typeset -Ag _rt_subver_map
@@ -183,63 +226,48 @@ _set_kver_internal_vars() {
 
 _set_kernel_version() {
 
-  # if $_version is a valid x.y version, define $_kernel_git_tag with latest x.y.z from $_kver_latest_tags_map
-  # if $_version is a valid x.y.z version, define $_kernel_git_tag directly
-  # Otherwise, empty it so it gets prompted
+# Determine the latest mainline (non-RC) kernel version
+msg2 "Determining the latest mainline (non-RC) kernel version..."
+default_kernel_version=""
+for version in "${!_kver_latest_tags_map[@]}"; do
+    if [[ ! "${_kver_latest_tags_map["$version"]}" =~ -rc ]]; then
+        default_kernel_version="${_kver_latest_tags_map["$version"]}"
+        break
+    fi
+done
 
+if [[ -z "$default_kernel_version" ]]; then
+    error "Unable to find a default mainline kernel version. Exiting."
+    exit 1
+fi
 
-  if [[ "$_version" == *-latest ]]; then
-    local kernel_ver="${_version::-7}"
-    if [[ -v _kver_latest_tags_map["$kernel_ver"] ]]; then
-      msg2 "Checking out latest kernel version of $kernel_ver"
-      _kernel_git_tag="${_kver_latest_tags_map[$kernel_ver]}"
+msg2 "Default kernel version: $default_kernel_version"
+
+# Prompt the user for a kernel version
+msg2 "Available kernel versions:"
+PS3="Select the kernel version you want (default: $default_kernel_version): "
+select user_selection in "${!_kver_latest_tags_map[@]}"; do
+    if [[ -n "$user_selection" ]]; then
+        _kernel_git_tag="${_kver_latest_tags_map["$user_selection"]}"
+        msg2 "Using user-selected kernel version: $_kernel_git_tag"
+        break
+    elif [[ -z "$REPLY" ]]; then
+        _kernel_git_tag="$default_kernel_version"
+        msg2 "No selection made. Using default kernel version: $_kernel_git_tag"
+        break
     else
-      error "non-existing kernel version associated with $_version"
-      exit 1
+        error "Invalid selection. Please try again."
     fi
-    elif [[ -n "$_version" ]]; then
-      if echo "$_kernel_tags" | grep -E "^$_version$" &> /dev/null; then
-      _kernel_git_tag="$_version"
-      else
-      error "tag \"$_version\" not found in remote git repository"
-      exit 1
-      fi
-    else
-    msg2 "Which kernel version do you want to install?"
+done
 
-    # Create a list of currently maintained kernels versions with their sub-version added
-
-    _kernel_fullver_list=()
-    for _key in "${_current_kernels[@]}"; do
-      _kernel_fullver_list+=("${_kver_latest_tags_map[$_key]}")
-    done
-    # Add the "Another" entry to enable building unmaintained kernel versions
-    _kernel_fullver_list+=("Another (no longer maintained upstream)")
-
-    # Default index corresponds to latest stable kernel
-    # put default index to "1" when the most recent kernel is an rc one
-    _default_index="0"
-    if [[ "${_kver_latest_tags_map[${_current_kernels[0]}]}" == *rc* ]]; then
-      _default_index="1"
-    fi
-
-    _prompt_from_array  "${_kernel_fullver_list[@]}"
-
-    if [[ "${_selected_value}" == Another* ]]; then
-      msg2 "Which EOL kernel version do you want to install?"
-
-      _kernel_fullver_list=()
-      for _key in "${_eol_kernels[@]}"; do
-        _kernel_fullver_list+=("${_kver_latest_tags_map[$_key]}")
-      done
-
-      # Default index corresponds to latest unmaintained kernel
-      _default_index="0"
-      _prompt_from_array "${_kernel_fullver_list[@]}"
-    fi
-
-    _kernel_git_tag="$_selected_value"
-  fi
+# Download the selected kernel sources
+if [[ -n "$_kernel_git_tag" ]]; then
+    msg2 "Retrieving kernel sources for version: $_kernel_git_tag"
+    # Add logic to fetch the sources here
+else
+    error "No valid kernel version selected or found."
+    exit 1
+fi
 }
 
 _set_cpu_scheduler() {
@@ -1950,10 +1978,7 @@ exit_cleanup() {
   fi
 
   if [ ! -d "$_where/logs" ]; then
-    echo "Creating folder: $_where/logs"
     mkdir -p "$_where/logs"
-  else
-    echo "Folder already exists: $_where/logs"
   fi
 
   # Copy over the customization.cfg file to the logs folder
