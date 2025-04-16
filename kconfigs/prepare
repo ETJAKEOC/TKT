@@ -1949,6 +1949,13 @@ exit_cleanup() {
     msg2 "compilation time : \n$_runtime"
   fi
 
+  if [ ! -d "$_where/logs" ]; then
+    echo "Creating folder: $_where/logs"
+    mkdir -p "$_where/logs"
+  else
+    echo "Folder already exists: $_where/logs"
+  fi
+
   # Copy over the customization.cfg file to the logs folder
   cp -f "$_where"/customization.cfg "$_where"/logs/customization.cfg.txt
 
