@@ -549,6 +549,21 @@ _tkg_initscript() {
   if [ -n "$_custom_pkgbase" ]; then
     echo -e "_custom_pkgbase=\"$_custom_pkgbase\"" >> "$_where"/BIG_UGLY_FROGMINER
   fi
+
+#### ETJAKEOC-DEBUG
+
+msg2 "DEBUG: Running _tkg_initscript..."
+msg2 "DEBUG: Kernel version: $_kernel_git_tag"
+msg2 "DEBUG: CPU scheduler: $_cpusched"
+msg2 "DEBUG: Compiler: $_compiler_name"
+if [ -e "$_where/BIG_UGLY_FROGMINER" ]; then
+    msg2 "DEBUG: BIG_UGLY_FROGMINER contents:"
+    cat "$_where/BIG_UGLY_FROGMINER"
+else
+    error "BIG_UGLY_FROGMINER not created."
+    exit 1
+fi
+####
 }
 
 user_patcher() {
