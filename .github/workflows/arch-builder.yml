@@ -9,7 +9,7 @@ on:
 
 env:
   _processor_opt: "generic"
-  _git_mirror: "github.com"
+  _git_mirror: "gregkh"
   PKGDEST: "/tmp/TKT"
   _debugdisable: "true"
   _noccache: "false"

@@ -13,10 +13,9 @@ _ispkgbuild="true"
 _distro="Arch"
 
 declare -p -x > current_env
-
-source "$_where"/customization.cfg # load default configuration from file
-
-if [ -e "$_EXT_CONFIG_PATH" ]; then
+  cp "$_where"/customization.cfg "$_where"/BIG_UGLY_FROGMINER
+  eval `grep _EXT_CONFIG_PATH "$_where"/customization.cfg`
+  if [ -f "$_EXT_CONFIG_PATH" ]; then
   msg2 "External configuration file $_EXT_CONFIG_PATH will be used and will override customization.cfg values."
   source "$_EXT_CONFIG_PATH"
 fi

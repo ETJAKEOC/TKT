@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of kernels that are maintained upstream
-_current_kernels=("6.14" "6.13" "6.12" "6.6" "6.1")
+_current_kernels=("6.15" "6.14" "6.13" "6.12" "6.6" "6.1")
 
 # List of kernels that are no longer maintained either upstream or locally
 _eol_kernels=("6.11" "6.10" "6.9" "6.8" "6.7" "6.5" "6.4" "6.3" "6.2" "6.0")
@@ -10,29 +10,32 @@ typeset -Ag _kernel_git_remotes
 _kernel_git_remotes=(
   ["kernel.org"]="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
   ["googlesource.com"]="https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable"
-  ["github.com"]="https://github.com/gregkh/linux.git"
+  ["gregkh"]="https://github.com/gregkh/linux.git"
   ["torvalds"]="https://github.com/torvalds/linux.git"
 )
 
 _git_remote_names=( "${!_kernel_git_remotes[@]}" )
 
-if [[ ! "${_git_remote_names[@]}" =~ "$_git_mirror" ]]; then
-  warning "git mirror '$_git_mirror' not recognized"
-  _git_mirror=""
-fi
 
 if [[ -z "$_git_mirror" ]]; then
-  _git_mirror="${_git_remote_names[2]}"
-  if ! timeout 5 git ls-remote ${_kernel_git_remotes[$_git_mirror]} >/dev/null || [[ "$( git ls-remote ${_kernel_git_remotes[$_git_mirror]} | head -n 1 )" = *502* ]]; then
-    warning "Mirror unreachable or too long to respond"
-    _git_mirror="${_git_remote_names[0]}"
-  fi
-  echo "Defaulting to ${_git_mirror} git mirror"
+  msg2 "using default kernel.org git remote"
+  _git_mirror="${_kernel_git_remotes['kernel.org']}"
+fi
+
+if [[ "${_git_remote_names[@]}" =~ "$_git_mirror" ]]; then
+  msg2 "using git mirror alias $_git_mirror"
+  _git_mirror="${_kernel_git_remotes[$_git_mirror]}"
+fi
+
+if $( ! timeout 10 git ls-remote $_git_mirror >/dev/null ) || \
+  [[ "$( git ls-remote $_git_mirror | head -n 1 )" = *502* ]]; then
+  error "Remote unreachable or took too long to respond"
+  exit 1
 fi
 
 # Fill out the latest tags map/dictionary
 _kernel_tags=$(git -c 'versionsort.suffix=-' \
-  ls-remote --exit-code --refs --sort='version:refname' --tags ${_kernel_git_remotes[$_git_mirror]} '*.*' \
+  ls-remote --exit-code --refs --sort='version:refname' --tags $_git_mirror '*.*' \
   | cut --delimiter='/' --fields=3)
 
 typeset -Ag _kver_latest_tags_map
@@ -136,44 +139,36 @@ _prompt_from_array() {
 }
 
 _set_kver_internal_vars() {
-  # Sets _basever and _basekernel from _kernel_git_tag
+  # Sets _basever, _basekernel and _sub global variables by reading Makefile at the root of the kernel sources
 
-  # Major Minor Sub/Patch
-  _kver_split=( "" "" "" )
-
-  _cur_index=0
-
-  _kernel_ver_str="$_kernel_git_tag"
-  [[ "${_kernel_git_tag:0:1}" == "v" ]] && _kernel_ver_str=$(echo "$_kernel_git_tag" | cut -c2-)
-
-  # we start from index 1 since index 0 is 'v'
-  for (( i=0; i<${#_kernel_ver_str}; i++ )); do
-    _cur_char="${_kernel_ver_str:$i:1}"
-    if [[ "$_cur_char" == "." || "$_cur_char" == "-" ]]; then
-      _cur_index=$((_cur_index + 1))
-    else
-      _kver_split[$_cur_index]+="$_cur_char"
-    fi
-  done
+  # VERSION, PATCHLEVEL, SUBLEVEL and EXTRAVERSION are defined in the first lines of kernel-src/Makefile
+  # we source those lines to retrieve those strings
+  local VERSION=`cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^VERSION | awk '{print $3}'`
+  local PATCHLEVEL=`cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^PATCHLEVEL | awk '{print $3}'`
+  local SUBLEVEL=`cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^SUBLEVEL | awk '{print $3}'`
+  local EXTRAVERSION=`cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^EXTRAVERSION | awk '{print $3}'`
 
   # examples: "6.0", "5.15", "5.4"
-  _basekernel="${_kver_split[0]}.${_kver_split[1]}"
+  _basekernel="$VERSION.$PATCHLEVEL"
 
   # examples: "60", "515", "54"
-  _basever="${_kver_split[0]}${_kver_split[1]}"
+  _basekernel="$VERSION$PATCHLEVEL"
 
   # examples: "5", "rc2", "122"
-  if [ -n "${_kver_split[2]}" ]; then
-    _sub="${_kver_split[2]}"
+  if [ -n "$EXTRAVERSION" ]; then
+    [[ ! "$EXTRAVERSION" == "-rc"* ]] && error "$EXTRAVERSION does not start with '-rc'" && exit 1
+    _sub="${EXTRAVERSION:1}"
   else
-    _sub="0"
+    _sub="$SUBLEVEL"
   fi
 
+  msg2 "kernel version to build is $VERSION.$PATCHLEVEL.$_sub"
+
   # Append a zero to the minor if it has single digit
-  [[ ${#_kver_split[1]} == "1" ]] && _kver_split[1]="0${_kver_split[1]}"
+  [[ ${#PATCHLEVEL} == "1" ]] && PATCHLEVEL="0$PATCHLEVEL"
 
   # examples: "600", "515", "504" we use this variable to have proper comparisons
-  _kver="${_kver_split[0]}${_kver_split[1]}"
+  _kver="$VERSION$PATCHLEVEL"
 
   if [ $_kver -le 605 ]; then
     # chosen kernel <= 6.5
@@ -192,29 +187,24 @@ _set_kernel_version() {
   # if $_version is a valid x.y.z version, define $_kernel_git_tag directly
   # Otherwise, empty it so it gets prompted
 
-  _searched_tag="$_version"
-  # prepend "v" if it's not there already
-  [[ "${_searched_tag:0:1}" != "v" ]] && _searched_tag="v$_searched_tag"
-  _version_search="$(echo "$_kernel_tags" | grep -F "$_searched_tag" | head -1)"
-  if [[ "$_searched_tag" = *.0 ]]; then
-    _searched_tag="${_searched_tag%.0}"
-    _version_search="${_searched_tag%.0}"
-  fi
 
-  if [[ -n "$_version" ]]; then
-    if [[ -v _kver_latest_tags_map[$_version] ]]; then
-      msg2 "Checking out latest kernel version of $_version"
-      _kernel_git_tag="${_kver_latest_tags_map[$_version]}"
-    elif [[ "$_searched_tag" == "$_version_search" ]]; then
-      msg2 "Checking out user-defined kernel version : $_version"
-      _kernel_git_tag="$_searched_tag"
+  if [[ "$_version" == *-latest ]]; then
+    local kernel_ver="${_version::-7}"
+    if [[ -v _kver_latest_tags_map["$kernel_ver"] ]]; then
+      msg2 "Checking out latest kernel version of $kernel_ver"
+      _kernel_git_tag="${_kver_latest_tags_map[$kernel_ver]}"
     else
-      [[ -n "$_version" ]] && echo "kernel version $_version not recognized, prompting..."
-      _version=""
+      error "non-existing kernel version associated with $_version"
+      exit 1
     fi
-  fi
-
-  if [ -z "$_version" ]; then
+    elif [[ -n "$_version" ]]; then
+      if echo "$_kernel_tags" | grep -E "^$_version$" &> /dev/null; then
+      _kernel_git_tag="$_version"
+      else
+      error "tag \"$_version\" not found in remote git repository"
+      exit 1
+      fi
+    else
     msg2 "Which kernel version do you want to install?"
 
     # Create a list of currently maintained kernels versions with their sub-version added
@@ -249,13 +239,13 @@ _set_kernel_version() {
     fi
 
     _kernel_git_tag="$_selected_value"
-
   fi
-
-  _set_kver_internal_vars
 }
 
 _set_cpu_scheduler() {
+
+  [[ -z "$_kver" ]] && error "bug: _kver variable not defined but needed" && exit 1
+
   declare -A _sched_description_array
   _sched_description_array=(
     ["eevdf"]="EEVDF (Earliest Eligible Virtual Deadline First scheduler) Linux kernel's default for ≥ 6.6"
@@ -414,23 +404,17 @@ fi
 
 _define_kernel_abs_paths() {
 
-  source "$_where"/BIG_UGLY_FROGMINER
-
-  if [ -z "$_kernel_work_folder_abs" ]; then
-    _kernel_work_folder_abs="$_where/$_kernel_work_folder/linux-src-git"
-    if [[ "$_kernel_work_folder" == /* ]]; then
-      _kernel_work_folder_abs="$_kernel_work_folder/linux/linux-src-git"
-    fi
-    echo -e "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
+  _kernel_work_folder_abs="$_where/$_kernel_work_folder/linux-src-git"
+  if [[ "$_kernel_work_folder" == /* ]]; then
+    _kernel_work_folder_abs="$_kernel_work_folder/linux-tkg/linux-src-git"
   fi
+  echo -e "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
 
-  if [ -z "$_kernel_source_folder_abs" ]; then
-    _kernel_source_folder_abs="$_where/$_kernel_source_folder/linux-kernel.git"
-    if [[ "$_kernel_source_folder" == /* ]]; then
-      _kernel_source_folder_abs="$_kernel_source_folder/linux/linux-kernel.git"
-    fi
-    echo -e "_kernel_source_folder_abs=\"$_kernel_source_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
+  _kernel_source_folder_abs="$_where/$_kernel_source_folder/linux-kernel.git"
+  if [[ "$_kernel_source_folder" == /* ]]; then
+    _kernel_source_folder_abs="$_kernel_source_folder/linux-tkg/linux-kernel.git"
   fi
+  echo -e "_kernel_source_folder_abs=\"$_kernel_source_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
 }
 
 
@@ -454,14 +438,7 @@ _setup_kernel_work_folder() {
 
   cd "$_kernel_source_folder_abs"
 
-  # Add remotes if needed
-  for remote in "${!_kernel_git_remotes[@]}"; do
-    if ! git remote -v | grep -w "$remote" ; then
-      git remote add "$remote" "${_kernel_git_remotes[$remote]}"
-    fi
-  done
-
-  msg2 "Fetching tag: $_kernel_git_tag from mirror $_git_mirror"
+  msg2 "Fetching tag: $_kernel_git_tag from remote $_git_mirror"
   git fetch --depth 1 $_git_mirror tag "$_kernel_git_tag"
 
   msg2 "Checking out tag: $_kernel_git_tag"
@@ -483,6 +460,7 @@ _setup_kernel_work_folder() {
     git worktree add -f "$_kernel_work_folder_abs" "$_kernel_git_tag"
   fi
 
+  _set_kver_internal_vars
 }
 
 
@@ -530,23 +508,18 @@ _tkg_initscript() {
   [ -e "${_where}/logs" ] && rm -rf "${_where}/logs"
   mkdir -p "${_where}/logs"
 
-  # Select Kernel version
   _set_kernel_version
-
-  # Select CPU scheduler
+  _set_kernel_work_folder
   _set_cpu_scheduler
 
   cp "$_where"/kpatches/${_basekernel}/* "$_where" # copy patches inside the PKGBUILD's dir to preserve makepkg sourcing and md5sum checking
   cp "$_where"/kconfigs/${_basekernel}/* "$_where" # copy config files and hooks inside the PKGBUILD's dir to preserve makepkg sourcing and md5sum checking
 
-  # Set compiler
   _set_compiler
 
   if [ -n "$_custom_pkgbase" ]; then
     echo -e "_custom_pkgbase=\"$_custom_pkgbase\"" >> "$_where"/BIG_UGLY_FROGMINER
   fi
-
-  _setup_kernel_work_folder
 }
 
 user_patcher() {
@@ -619,8 +592,6 @@ _tkg_patcher() {
 
 _tkg_srcprep() {
 
-  _define_kernel_abs_paths
-
   cd "$_kernel_work_folder_abs"
 
   if (( "$_kver" <= 602 )); then
@@ -654,9 +625,11 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
 
   _patch_location="$srcdir"
 
-  if ( [ "$_kver" = "601" ] && [ "$_sub" -lt "79" ] ) || ( [ "$_kver" = "606" ] && [ "$_sub" -lt "18" ] ) || ( [ "$_kver" = "607" ] && [ "$_sub" -lt "6" ] ) || [[ "$_kver" =~ ^(517|518|519|600|602|603|604|605)$ ]]; then
+  if ( [ "$_kver" = "601" ] && [ "$_sub" -lt "79" ] ) || ( [ "$_kver" = "606" ] && [ "$_sub" -lt "18" ] ) || ( [ "$_kver" = "607" ] && [ "$_sub" -lt "6" ] ) || [[ "$_kver" =~ ^(600|602|603|604|605)$ ]]; then
     _patch_name="more-uarches-for-kernel-5.17-6.1.78"
     _patch_name="more-ISA-levels-and-uarches-for-kernel-5.17-6.1.78"
+  elif [ "$_kver" = "615" ]; then
+    warning "Skipping graysky2 kernel compiler patch on this revision"
   else
     _patch_name="more-ISA-levels-and-uarches-for-kernel-6.1.79+"
   fi
@@ -1760,10 +1733,12 @@ fi
   fi
 
   if [[ "$_modprobeddb" = "true" || "$_kernel_on_diet" == "true" ]]; then
+    msg2 "Using modprobed-db"
     if [ -f "$_where"/"$_modprobeddb_db_path" ]; then
       _modprobeddb_db_path="$_where"/"$_modprobeddb_db_path"
     fi
     if [ "$_kernel_on_diet" == "true" ]; then
+      msg2 "Using TKT diet db"
       _modprobeddb_db_path="$_where/minimal-modprobed.db"
     fi
     if [ ! -f $_modprobeddb_db_path ]; then
