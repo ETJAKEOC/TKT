@@ -43,7 +43,7 @@ for _key in "${_current_kernels[@]}" "${_eol_kernels[@]}"; do
 done
 
 # Determine the latest mainline (non-RC) kernel version as the default
-default_kernel_version=""
+#default_kernel_version=""
 for version in "${_current_kernels[@]}"; do
   if [[ ! "${_kver_latest_tags_map["$version"]}" =~ -rc ]]; then
     default_kernel_version="${_kver_latest_tags_map["$version"]}"
@@ -85,6 +85,7 @@ if [[ -z "$_kernel_git_tag" ]] || ! echo "$_kernel_tags" | grep -E "^$_kernel_gi
   error "Tag '$_kernel_git_tag' not found in the remote git repository."
   exit 1
 fi
+_kernel_version="$_kernel_git_tag"
 
 # PREEMPT_RT's supported kernel subversion
 typeset -Ag _rt_subver_map
@@ -549,21 +550,6 @@ _tkg_initscript() {
   if [ -n "$_custom_pkgbase" ]; then
     echo -e "_custom_pkgbase=\"$_custom_pkgbase\"" >> "$_where"/BIG_UGLY_FROGMINER
   fi
-
-#### ETJAKEOC-DEBUG
-
-msg2 "DEBUG: Running _tkg_initscript..."
-msg2 "DEBUG: Kernel version: $_kernel_git_tag"
-msg2 "DEBUG: CPU scheduler: $_cpusched"
-msg2 "DEBUG: Compiler: $_compiler_name"
-if [ -e "$_where/BIG_UGLY_FROGMINER" ]; then
-    msg2 "DEBUG: BIG_UGLY_FROGMINER contents:"
-    cat "$_where/BIG_UGLY_FROGMINER"
-else
-    error "BIG_UGLY_FROGMINER not created."
-    exit 1
-fi
-####
 }
 
 user_patcher() {
@@ -1903,7 +1889,7 @@ fi
 }
 
 exit_cleanup() {
-
+msg2 "DEBUG: Cleaning up environment due to failue"
   # Move eventual shell-output.log file to logs folder
   if [ -f "$_where/shell-output.log" ]; then
     mv -f "$_where"/shell-output.log "$_where"/logs/shell-output.log.txt
@@ -1920,7 +1906,7 @@ exit_cleanup() {
   rm -f "$_where"/prepare
 
   # Remove state tracker
-  rm -f "$_where"/BIG_UGLY_FROGMINER
+#  rm -f "$_where"/BIG_UGLY_FROGMINER
 
   # Remove ntsync rules file
   rm -f "$_where"/ntsync.rules

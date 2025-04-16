@@ -12,13 +12,16 @@ _where="$PWD" # track basedir as different Arch based distros are moving srcdir 
 _ispkgbuild="true"
 _distro="Arch"
 
-  cp "$_where"/customization.cfg "$_where"/BIG_UGLY_FROGMINER
-  source "$_where"/BIG_UGLY_FROGMINER
-  eval `grep _EXT_CONFIG_PATH "$_where"/customization.cfg`
+  eval $(grep _EXT_CONFIG_PATH "$_where"/customization.cfg)
+
   if [ -f "$_EXT_CONFIG_PATH" ]; then
     msg2 "External configuration file $_EXT_CONFIG_PATH will be used and will override customization.cfg values."
-    source "$_EXT_CONFIG_PATH"
+    cp "$_EXT_CONFIG_PATH" "$_where"/BIG_UGLY_FROGMINER
+  else
+    cp "$_where"/customization.cfg "$_where"/BIG_UGLY_FROGMINER
   fi
+
+  source "$_where"/BIG_UGLY_FROGMINER
   source "$_where"/kconfigs/prepare
 
 # Make sure we're in a clean state
