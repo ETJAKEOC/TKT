@@ -1,77 +1,98 @@
 name: Build archlinux kernel
+
 on:
   workflow_call:
     inputs:
       _cpusched:
         required: true
         type: string
-
+      compiler:
+        required: true
+        type: string
 
 env:
   _processor_opt: "x86-64"
   _git_mirror: "gregkh"
-  PKGDEST: "/tmp/linux-tkt"
   _debugdisable: "true"
   _noccache: "true"
   _STRIP: "true"
   _kernel_on_diet: "true"
-  _kernel_work_folder: "/tmp"
-  _kernel_source_folder: "/tmp"
-  # _modprobeddb: "true"
-  _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
-  _nofallback: "true"
-
-
+  _nofallback: "false"
 
 jobs:
   build-kernel:
     env:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
     container: archlinux:latest
 
     steps:
-      # We need to install git so the checkout is done with it
-      #- name: Update mirrorlist
-      #  run: |
-      #    pacman -Sy --noconfirm reflector
-      #    reflector --latest 50 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
+      - name: Update mirrorlist
+        run: |
+          pacman -Sy --noconfirm reflector rsync curl wget aria2
+          reflector --fastest 10 --verbose --country US --protocol rsync,https,http \
+            --latest 10 --age 1 --sort rate --save /etc/pacman.d/mirrorlist
+          if ! grep -q '^Server' /etc/pacman.d/mirrorlist; then
+            echo 'Fallback: using default mirror'
+            echo 'Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+          fi
 
-      - name: Install git
-        run: pacman -Syu --noconfirm git
+      - name: Install dependencies and cleanup
+        run: |
+          pacman -Syu --needed --noconfirm \
+            git clang llvm lld base-devel sudo bison xmlto docbook-xsl inetutils bc \
+            libelf pahole patchutils flex python-sphinx python-sphinx_rtd_theme \
+            graphviz imagemagick cpio perl tar xz schedtool coreutils kmod initramfs
+          sudo rm -rf /var/cache/pacman/pkg/*
 
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
-      # 1. Install deps needed for building and sudo
-      # 2. create a user "user" and give it passwordless sudo
-      #    and necessary permissions
-      #    because makepkg absolutely refuses to run as root
       - name: Prepare for makepkg
         run: |
-          pacman -Syu --noconfirm base-devel sudo
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          chown user -R ..
-          chown user -R /tmp
+          chown user -R {../,./}
 
-      # - name: "[debug] make dummy modprobed-db file for faster ci"
-      #   run: |
-      #     touch "${_modprobeddb_db_path}"
-      #     echo "${_modprobeddb_db_path}"
+      - name: Adjust compiler and compile Kernel
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
+          su --preserve-environment user -c "yes '' | makepkg --noconfirm -s"
 
-      - name: Compile Kernel
-        run: su --preserve-environment user -c "yes '' | makepkg --noconfirm -s"
-        # run: |
-        #   mkdir -p "$PKGDEST"
-        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
-
-      - name: rename kernel config
-        run: mv kernelconfig.new kernelconfig.arch.${{ env._cpusched }}.txt
+      - name: Package PKG files to $arch-linux format
+        run: |
+          arch=$(uname -m)
+          for file in *linux*.pkg.tar.zst; do
+            base=$(basename "$file")
+            mv "$file" "Arch-linux-${arch}-${base#linux-}"
+          done
+          tar czf Arch-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz Arch-linux*.pkg.tar*
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arch-kernel-packages-${{ env._cpusched }}
-          path: |
-            ${{ env.PKGDEST }}/linux*.pkg.tar.zst
-            kernelconfig*.txt
+          name: arch-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: Arch-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Arch Kernel Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: Arch-linux*.pkg.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

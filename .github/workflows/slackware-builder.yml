@@ -1,0 +1,82 @@
+name: Build Slackware kernel
+
+on:
+  workflow_call:
+    inputs:
+      _cpusched:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+
+env:
+  _processor_opt: "x86-64"
+  _distro: "Slackware"
+  _git_mirror: "gregkh"
+  _debugdisable: "true"
+  _noccache: "true"
+  _STRIP: "true"
+  _kernel_on_diet: "true"
+  _nofallback: "false"
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    container: aclemons/slackware:current
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GIT_SSL_CAINFO: /etc/ssl/certs/ca-certificates.crt
+    steps:
+
+      - name: Download and install latest ca-certificates from Slackware mirror
+        run: |
+          BASE_URL="http://mirrors.unixsol.org/slackware/slackware64-current/"
+          PKG_NAME=$(wget --no-check-certificate -q -O - "${BASE_URL}slackware64/n/" | grep -o 'ca-certificates-[0-9]\{8\}\.txz' | sort -r | head -n 1)
+          wget --no-check-certificate "${BASE_URL}GPG-KEY"
+          wget --no-check-certificate "${BASE_URL}ChangeLog.txt"
+          wget --no-check-certificate "${BASE_URL}slackware64/n/${PKG_NAME}"
+          echo "${BASE_URL}" > /etc/slackpkg/mirrors
+          installpkg "${PKG_NAME}"
+          yes | slackpkg update
+          echo "YES" | slackpkg update gpg
+          wget --no-check-certificate -O /etc/ssl/certs/ca-certificates.crt https://curl.se/ca/cacert.pem
+
+      - name: Install dependencies and clean-up
+        run: |
+          yes | slackpkg -batch=on -default_answer=y install bash bc bison binutils brotli clang cpio curl cyrus-sasl dwarves elfutils fakeroot fakeroot-ng file flex gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust gc glibc git guile gzip kernel-headers kmod libedit libelf libxml2 lld llvm lz4 lzop m4 make ncurses nghttp2 nghttp3 openssl patchutils perl python3 python3-pip rsync spirv-llvm-translator sudo tar time wget xxHash xz zstd
+
+      - name: Checkout TKT
+        uses: actions/checkout@v4
+
+      - name: Adjust compiler and compile Kernel
+        shell: bash
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          git config --global http.sslCAInfo /etc/ssl/certs/ca-certificates.crt
+          sed -i 's/^_distro=".*"/_distro="Slackware"/' customization.cfg
+          sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
+          yes '' | bash ./install.sh install || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slackware-kernel-packages-${{ inputs._cpusched }}-${{ inputs.compiler }}
+          path: SLACKPKGS/*.txz
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Slackware Kernel Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SLACKPKGS/*.txz

@@ -1,17 +1,24 @@
 # DO NOT IGNORE! YOU MUST READ THIS BEFORE YOU EVEN CLONE THE REPO IN ORDER TO USE IT!
-### Most questions you can ask will be answered in this file, or in the `GUIDE.md` file.
+### Most questions you can ask will be answered in this file.
 
-## TꓘT - A TKG fork
+## TꓘT (The Kernel Toolkit) - A TKG fork
 
-- Please checkout the [CONTRIBUTIONS_GUIDELINE.MD](https://github.com/ETJAKEOC/TKT/blob/Alpha/CONTRIBUTION_GUIDELINE.md) file for information about collaboration.
+### WE NOW HAVE PREBUILT KERNELS FOR TESTING!!!
+#### Please check the release tab for the specific kernel of your choosing.
+
+- If you like the work I do here, and want to donate to me/the project, checkout the [DONATIONS.MD](https://github.com/ETJAKEOC/TKT/blob/main/DOCS/DONATIONS.md) file.
+- Please checkout the [CONTRIBUTIONS_GUIDELINE.MD](https://github.com/ETJAKEOC/TKT/blob/main/DOCS/CONTRIBUTION_GUIDELINE.md) file for information about collaboration or how to help the project in general.
+- Please read the [COMPILATION_GUIDELINE.MD](https://github.com/ETJAKEOC/TKT/blob/main/DOCS/COMPILATION_GUIDELINE.md) file for information about how to run the script and compile your own kernel.
 
 This repository provides scripts to automatically download, patch and compile the Linux Kernel from [the official Linux git repository](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git), with a selection of patches aiming for better desktop/gaming experience. The provided patches can be enabled/disabled by editing the `customization.cfg` file and/or by following the interactive install script. You can use an external config file (default is `$HOME/.config/TKT.cfg`, tweakable with the `_EXT_CONFIG_PATH` variable in `customization.cfg`). You can also use your own patches (more information in `customization.cfg` file).
+
 
 #### Tested distro's so far;
 ```
  -------------------------------
 | Arch Linux	=	Working |
 | Gentoo	=	Working |
+| Slackware	=	Working |
  -------------------------------
 ```
 
@@ -24,6 +31,7 @@ This repository provides scripts to automatically download, patch and compile th
 - In `intel_pstate` driver, frequency scaling aggressiveness has been changed with kernel 5.5 which results in stutters and poor performance in low/medium load scenarios (for higher power savings). As a workaround for our gaming needs, we are setting it to passive mode to make use of the `acpi_cpufreq` governor passthrough, keeping full support for turbo frequencies. It's combined with our aggressive ondemand governor by default for good performance on most CPUs while keeping frequency scaling for power savings. In a typical low/medium load scenario (Core i7 9700k, playing Mario Galaxy on Dolphin emulator) intel_pstate in performance mode gives a stuttery 45-50 fps experience, while passive mode + aggressive ondemand offers a locked 60 fps.
 - Nvidia's proprietary drivers might need to be patched if they don't support your chosen kernel OOTB: [Frogging-Family nvidia-all](https://github.com/Frogging-Family/nvidia-all) can do that automatically for you.
 - Note regarding kernels older than 5.9 on Arch Linux: since the switch to `zstd` compressed `initramfs` by default, you will face an `invalid magic at start of compress` error by default. You can workaround the issue by editing `/etc/mkinitcpio.conf` to uncomment the `COMPRESSION="lz4"` (for example, since that's the best option after zstd) line and regenerating `initramfs` for all kernels with `sudo mkinitpcio -P`
+
 
 ### Customization options
 #### Alternative CPU schedulers
@@ -42,6 +50,7 @@ Alternative schedulers are available to you in TKT:
 - BORE (Burst-Oriented Response Enhancer) by Masahito Suzuki - CFS/EEVDF based : [code repository](https://github.com/firelzrd/bore-scheduler)
 
 These alternative schedulers can offer a better performance/latency ratio for gaming and desktop use. The availability of each scheduler depends on the chosen Kernel version: the script will display what's available on a per-version basis.
+
 #### Default tweaks
 - Memory management and swapping tweaks
 - Scheduling tweaks
@@ -59,11 +68,10 @@ The `customization.cfg` file offers many toggles for extra tweaks:
 - Using [Modprobed-db](https://github.com/graysky2/modprobed-db)'s database can reduce the compilation time and produce a smaller kernel which will only contain the modules listed in it. **NOT recommended**
   - **Warning**: make sure to read [thoroughly about it first](https://wiki.archlinux.org/index.php/Modprobed-db) since it comes with caveats that can lead to an unbootable kernel.
 - "Zenify" patchset using core blk, mm and scheduler tweaks from Zen
-- `ZFS` FPU symbols (<5.9)
 - Overrides for missing ACS capabilities
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) support
 - Provide own kernel `.config` file
-- ...
+
 #### User patches
 
 To apply your own patch files using the provided scripts, you will need to put them in a `linux<VERSION><PATCHLEVEL>-tkg-userpatches` folder -- where _VERSION_ and _PATCHLEVEL_ are the kernel version and patch level, as specified in [linux Makefile](https://github.com/torvalds/linux/blob/master/Makefile), the patch works on, _e.g_ `linux65-tkg-userpatches` -- at the same level as the `PKGBUILD` file, with the `.mypatch` extension. The script will by default ask if you want to apply them, one by one. The option `_user_patches` should be set to `true` in the `customization.cfg` file for this to work.
@@ -72,6 +80,7 @@ To apply your own patch files using the provided scripts, you will need to put t
 ### Install procedure
 
 For all the supported linux distributions, `TKT` has to be cloned with `git`. Since it keeps a clone of the kernel's sources within (`linux-src-git`, created during the first build after a fresh clone), it is recommended to keep the cloned `TKT` folder and simply update it with `git pull`, the install script does the necessary cleanup at every run.
+
 
 #### Arch & derivatives
 ```shell
@@ -83,6 +92,7 @@ makepkg -si
 The script will use a slightly modified Arch config from the `TKT-config` folder, it can be changed through the `_configfile` variable in `customization.cfg`. The options selected at build-time are installed to `/usr/share/doc/$pkgbase/customization.cfg`, where `$pkgbase` is the package name.
 
 **Note:** the `base-devel` package group is expected to be installed, see [here](https://wiki.archlinux.org/title/Makepkg) for more information.
+
 
 #### DEB (Debian, Ubuntu and derivatives) and RPM (Fedora, SUSE and derivatives) based distributions
 
@@ -103,6 +113,17 @@ cd path/to/TKT
 ./install.sh uninstall-help
 ```
 The script will use a slightly modified Arch config from the `config` folder, it can be changed through the `_configfile` variable in `customization.cfg`.
+
+
+#### Gentoo
+The interactive `install.sh` script supports Slackware by following similar steps to `Generic`, providing you with `SLACKPKGS/*.txz` packages for install convenience.
+```shell
+git clone https://github.com/ETJAKEOC/TKT.git
+cd TKT
+# Optional: edit the "customization.cfg" file
+./install.sh install
+sudo installpkg SLACKPKGS/*.txz
+```
 
 #### Generic install
 The interactive `install.sh` script can be used to perform a "Generic" install by choosing `Generic` when prompted. It git clones the kernel tree in the `linux-src-git` folder, patches the code and edits a `.config` file in it. The commands to do are the following:
@@ -130,6 +151,7 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 - The script uses Arch's `.config` file as a base. A custom one can be provided through `_configfile` in `customization.cfg`.
 - The installed files will not be tracked by your package manager and uninstalling requires manual intervention. `./install.sh uninstall-help` can help with useful information if your install procedure follows the `Generic` approach.
 
+
 #### Gentoo
 The interactive `install.sh` script supports Gentoo by following the same procedure as `Generic`, symlinks the sources folder in `/usr/src/` to `/usr/src/linux`, then offers to do an `emerge @module-rebuild` for convenience
 ```shell
@@ -139,6 +161,7 @@ cd TKT
 ./install.sh install
 ```
 **Note:** If you're running openrc, you'll want to set `_configfile="running-kernel"` to use your current kernel's defconfig instead of Arch's. Else the resulting kernel won't boot.
+
 
 #### Included script!!!
 You may notice a random script file in this repository called `initramfs-and-grub-update.sh`. This script *should* provide you with the most basic setup to recompile your initramfs, and resetup the GRUB2 bootmenu after compiling your kernel.

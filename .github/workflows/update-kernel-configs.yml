@@ -1,11 +1,10 @@
 name: Update kernel config
 on:
   schedule:
-    - cron: '17 */12 * * *' # “At minute 17 past every 12th hour.”
+    - cron: '0 0 1 * *' # Run once a month
   workflow_dispatch:
 
 jobs:
-
   update-kernel-config:
     runs-on: ubuntu-latest
     strategy:
@@ -15,10 +14,21 @@ jobs:
         include:
           - link: https://gitlab.archlinux.org/archlinux/packaging/packages/linux
             tag_suffix: .arch
+            compiler: gcc
+          - link: https://gitlab.archlinux.org/archlinux/packaging/packages/linux
+            tag_suffix: .arch
+            compiler: llvm
           - link: https://gitlab.archlinux.org/archlinux/packaging/packages/linux-lts
             tag_suffix: '-'
+            compiler: gcc
+          - link: https://gitlab.archlinux.org/archlinux/packaging/packages/linux-lts
+            tag_suffix: '-'
+            compiler: llvm
 
     steps:
+      - name: Checkout TKT
+        uses: actions/checkout@v4
+
       - name: Get latest config file version upstream
         id: upstream-config
         run: |
@@ -26,20 +36,32 @@ jobs:
           ls-remote --exit-code --refs --sort='version:refname' --tags ${{ matrix.link }}.git '*.*' \
           | cut --delimiter='/' --fields=3 | tail -n 1 > latest-upstream-config
           echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
-          echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
-
-      - name: Checkout linux-tkg
-        uses: actions/checkout@v4
+          echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2)" >> $GITHUB_OUTPUT
 
       - name: Update config file
         id: update-config
         run: |
-          cd linux-tkg-config/${{ steps.upstream-config.outputs.kver }}
-          wget ${{ matrix.link }}/-/raw/main/config -O config.x86_64
-          if git diff --exit-code config.x86_64
-          then
+          kver="${{ steps.upstream-config.outputs.kver }}"
+          configd="kconfigs/${kver}"
+          configf="${configd}/config.x86_64"
+
+          mkdir -p "${configd}"
+
+          # Fail if the compiler-specific config doesn't exist
+          if [ ! -f "${configf}" ]; then
+            echo "::error::Source config.x86_64 for kernel version ${kver} does not exist!"
+            exit 1
+          fi
+
+          # Download the latest config to a temp file
+          wget "${{ matrix.link }}/-/raw/main/config" -O config.latest
+
+          # Compare and update if necessary
+          if diff -q "${configf}" config.latest > /dev/null; then
             echo "config-updated=0" >> $GITHUB_OUTPUT
+            rm config.latest
           else
+            mv config.latest "${configf}.${{ matrix.compiler }}"
             echo "config-updated=1" >> $GITHUB_OUTPUT
           fi
 
@@ -49,5 +71,7 @@ jobs:
           git config --global user.name 'ETJAKEOC'
           git config --global user.email 'ETJAKEOC@gmail.com'
           git pull
-          git commit -am "Update ${{ steps.upstream-config.outputs.kver }} kernel config to ${{ steps.upstream-config.outputs.latest }}"
-          git push
+          kver="${{ steps.upstream-config.outputs.kver }}"
+          git add "kconfigs/${kver}/config.*"
+          git commit -am "Update ${kver} kernel config for ${{ matrix.compiler }} to ${{ steps.upstream-config.outputs.latest }}"
+          git push https://${{ secrets.PAT_TOKEN }}@github.com/ETJAKEOC/TKT.git
