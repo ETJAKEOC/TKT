@@ -8,22 +8,28 @@ on:
       _cpusched:
         required: true
         type: string
+      compiler:
+        required: true
+        type: string
 
 jobs:
   dispatch-to-fedora:
     uses: ./.github/workflows/fedora-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
     if: inputs.os == 'fedora'
 
   dispatch-to-ubuntu:
     uses: ./.github/workflows/ubuntu-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
     if: inputs.os == 'ubuntu'
 
   dispatch-to-arch:
     uses: ./.github/workflows/arch-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
     if: inputs.os == 'arch'

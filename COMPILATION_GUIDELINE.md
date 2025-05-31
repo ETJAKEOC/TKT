@@ -2,7 +2,7 @@
 
 ## INTRODUCTION:
 
-Welcome to the TKT kernel crash course. Here we will learn about the basics of setting up and using the TKT kernel install script. Most options in this guide that we will cover will have their own descriptions inside the `customization.cfg` file, this just covers the basics and tries to explain them. For a more in depth explanation of an option, please refer to the original file, or do a search online about it.
+Welcome to TKT (The Kernel Toolkit). Here we will learn about the basics of setting up and using the TKT kernel install script. Most options in this guide that we will cover will have their own descriptions inside the `customization.cfg` file, this just covers the basics and tries to explain them. For a more in depth explanation of an option, please refer to the original file, or do a search online about it.
 
 Depending on the OS you`re running depends on how you will install this package.
 

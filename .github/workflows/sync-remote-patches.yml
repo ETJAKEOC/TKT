@@ -1,7 +1,7 @@
 name: sync remote patches
 on:
   schedule:
-    - cron: '17 */12 * * *' # “At minute 17 past every 12th hour.”
+    - cron: '0 0 1 * *' # “Once a month.”
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
             copy_as: 0013-gentoo-print-loaded-firmware.patch
 
     steps:
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
       - name: Sync patches
@@ -35,7 +35,7 @@ jobs:
         run: |
           set -e
 
-          cd linux-tkg-patches
+          cd kpatches
 
           for kver in *
           do
@@ -46,7 +46,7 @@ jobs:
             if wget $file_link -O $kver/"${{ matrix.copy_as }}".new &> /dev/null
             then
               echo "Link exists"
-              echo "Overwriting linux-tkg-patches/$kver/${{ matrix.copy_as }} with remote file"
+              echo "Overwriting kpatches/$kver/${{ matrix.copy_as }} with remote file"
               mv -f $kver/"${{ matrix.copy_as }}".new $kver/"${{ matrix.copy_as }}"
               git add -N $kver/"${{ matrix.copy_as }}"
             else
@@ -68,7 +68,7 @@ jobs:
           git config --global user.name 'ETJAKEOC'
           git config --global user.email 'ETJAKEOC@gmail.com'
 
-          cd linux-tkg-patches
+          cd kpatches
           git add .
           git commit -m "Update ${{ matrix.description }}"
           git pull --rebase
