@@ -1,4 +1,4 @@
-name: Build Fedora kernel
+name: Build SUSE kernel
 on:
   workflow_call:
     inputs:
@@ -11,7 +11,7 @@ on:
 
 env:
   _processor_opt: "x86-64"
-  _distro: "Fedora"
+  _distro: "Suse"
   _git_mirror: "gregkh"
   _logging_use_script: "no"
   _install_after_building: "no"
@@ -28,17 +28,26 @@ jobs:
       compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
-    container: fedora:latest
+    container: opensuse/tumbleweed:latest
 
     steps:
-      - name: Install dependencies and cleanup
+      - name: Add Python Modules repo and import GPG key
         run: |
-          dnf install --assumeyes  --skip-unavailable \
-            bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager \
-            fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 \
-            make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel \
-            perl-generators pesign python3-devel python3-pip qt5-qtbase-devel rpm-build rpmdevtools rsync schedtool wget xz zstd
-          rm -rf /var/cache/dnf/*
+          zypper --non-interactive addrepo --refresh \
+            https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Tumbleweed/devel:languages:python.repo || true
+          rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Tumbleweed/repodata/repomd.xml.key || true
+          zypper --gpg-auto-import-keys refresh
+
+      - name: Install dependencies
+        run: |
+          zypper refresh
+          zypper --non-interactive install \
+            bc bison ccache clang curl dwarves flex gcc-c++ gawk git hostname \
+            kernel-devel libXi-devel libuuid-devel lld llvm lz4 make ncurses-devel libnuma-devel \
+            libopenssl-devel libdw-devel patchutils perl pesign python3 python311-devel python311-pip \
+            libqt5-qtbase-devel rpm-build rsync wget zstd \
+            libelf-devel systemd-devel
+          zypper clean -a
 
       - name: Checkout TKT
         uses: actions/checkout@v4
@@ -52,10 +61,10 @@ jobs:
           if [ "${{ inputs.compiler }}" = "llvm" ] || [ "${{ inputs.compiler }}" = "clang" ]; then
             export KCFLAGS="$KCFLAGS -Wold-style-declaration"
           fi
-          sed -i 's/^_distro=".*"/_distro="Fedora"/' customization.cfg
+          sed -i 's/^_distro=".*"/_distro="Suse"/' customization.cfg
           sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
           set +o pipefail
-          yes '' | ./install.sh install || true
+          _distro="Suse" _compiler="${{ inputs.compiler }}" yes '' | ./install.sh install || true
           set -o pipefail
 
       - name: Rename RPM files to $arch-linux format
@@ -63,24 +72,24 @@ jobs:
           arch=$(uname -m)
           for file in RPMS/kernel*.rpm; do
             base=$(basename "$file")
-            mv "$file" "RPMS/Fedora-linux-${arch}-${base#kernel-}"
+            mv "$file" "RPMS/SUSE-linux-${arch}-${base#kernel-}"
           done
 
       - name: Package RPM files
         run: |
-          tar czf Fedora-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz RPMS/*.rpm
+          tar czf SUSE-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz RPMS/*.rpm
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fedora-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
-          path: Fedora-linux-*.tar.gz
+          name: suse-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: SUSE-linux-*.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           tag_name: ${{ github.ref_name }}
-          name: "Fedora Kernel Release ${{ github.ref_name }}"
+          name: "SUSE Kernel Release ${{ github.ref_name }}"
           draft: false
           prerelease: false
         env:
@@ -90,6 +99,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: Fedora-linux-*.tar.gz
+          files: RPMS/SUSE-linux-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

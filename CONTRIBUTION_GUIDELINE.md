@@ -17,6 +17,61 @@ removing support for CAN bus and HAM radio hardware for desktop PC kernels, this
 The main contribution to this project is to simply run it. If you can run this kernel on more hardware
 this will help us to debug any issues that may arise from our tunings, and we can address them.
 
+## Contribute Your Kernel Module Data
+
+Help make this project smarter for everyone by contributing your system’s module usage! We're building a generic module list that covers the most common real-world hardware—your input matters.
+
+## Contribute Your Kernel Module Data (via lsmod - the preferred method)
+
+Open a terminal shell and run the following command to export your loaded modules into a file that you can submit to me.
+
+```bash
+lsmod | awk 'NR>1 {print $1}' | sort -u > ~/TKT-modules-list.txt
+```
+
+## Contribute Your Kernel Module Data (via modprobed-db)
+
+### Step 1: Install modprobed-db
+
+Package manager based:
+
+sudo 'your-package-manager install' modprobed-db
+
+### Step 2: Setup and Enable the Logging Job
+
+Start logging every module that gets used on boot or when you load something manually:
+
+modprobed-db init
+
+Enable the systemd service to run on every boot:
+
+sudo systemctl enable --now modprobed-db.service
+
+Let it run for a few days or just during your regular use—boot into different environments, use hardware, peripherals, Wi-Fi, audio, USB, etc. The goal is to build a rich database of your system's actual module usage.
+
+### Step 3: Send Me Your Data
+
+Once you've built up some history:
+
+modprobed-db dump > my-modules.txt
+
+Then send me the my-modules.txt file via a pull request. Add system details if you can (laptop/desktop, CPU/GPU, distro)—that context helps!
+
+## Goals
+
+Below is a checklist of platform-specific compile goals for this project. These represent both completed and planned features, and will help contributors and users see where the project is headed.
+```
+- [x] **Slackware:** Complete build and patch set.
+- [ ] **Ubuntu/Mint:** Split out compile process with appropriate Ubuntu/Mint-specific patches.
+- [x] **Debian:** Dedicated compile path with Debian-specific patches.
+- [ ] **Pop!_OS:** Build workflow with Pop!_OS-specific patches.
+- [ ] **Gentoo (OpenRC):** Gentoo OpenRC-specific compile.
+- [ ] **Gentoo (SystemD):** Gentoo SystemD-specific compile.
+- [x] **OpenSUSE:** Dedicated OpenSUSE compile process.
+```
+> **Note:** All of these are intended to be GHCI builds where possible.
+
+
 If you are interested in contributing to this project, please, feel free to fork it, and do some work.
 
 You can contact me on Discord @ETJAKEOC

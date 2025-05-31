@@ -8,22 +8,49 @@ on:
       _cpusched:
         required: true
         type: string
+      compiler:
+        required: true
+        type: string
 
 jobs:
+  dispatch-to-arch:
+    uses: ./.github/workflows/arch-builder.yml
+    with:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    if: inputs.os == 'arch'
+
+  dispatch-to-debian:
+    uses: ./.github/workflows/debian-builder.yml
+    with:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    if: inputs.os == 'debian'
+
   dispatch-to-fedora:
     uses: ./.github/workflows/fedora-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
     if: inputs.os == 'fedora'
+
+  dispatch-to-slackware:
+    uses: ./.github/workflows/slackware-builder.yml
+    with:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    if: inputs.os == 'slackware'
+
+  dispatch-to-suse:
+    uses: ./.github/workflows/suse-builder.yml
+    with:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    if: inputs.os == 'suse'
 
   dispatch-to-ubuntu:
     uses: ./.github/workflows/ubuntu-builder.yml
     with:
       _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
     if: inputs.os == 'ubuntu'
-
-  dispatch-to-arch:
-    uses: ./.github/workflows/arch-builder.yml
-    with:
-      _cpusched: ${{ inputs._cpusched }}
-    if: inputs.os == 'arch'

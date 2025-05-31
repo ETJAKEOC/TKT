@@ -8,15 +8,16 @@
 # All credits due to the previous pioneers of this script whom came before me. Thank you for your effort.
 # Hijacked by: ETJAKEOC <etjakeoc@gmail.com>
 
-_where="$PWD" # track basedir as different Arch based distros are moving srcdir around
+ # track basedir as different Arch based distros are moving srcdir around
+_where="$PWD"
 
 # Create logs dir if it does not already exist.
 [ -d "$_where/logs" ] || mkdir -p "$_where/logs"
 
-# Create BIG_UGLY_FROGMINER only on first run and save in it all settings
-if [ ! -e "$_where"/BIG_UGLY_FROGMINER ]; then
+# Create TKT_CONFIG only on first run and save in it all settings
+if [ ! -e "$_where"/TKT_CONFIG ]; then
 
-  cp "$_where"/customization.cfg "$_where"/BIG_UGLY_FROGMINER
+  cp "$_where"/customization.cfg "$_where"/TKT_CONFIG
 
   # extract and define value of _EXT_CONFIG_PATH from customization file
   if [[ -z "$_EXT_CONFIG_PATH" ]]; then
@@ -25,20 +26,20 @@ if [ ! -e "$_where"/BIG_UGLY_FROGMINER ]; then
 
   if [ -f "$_EXT_CONFIG_PATH" ]; then
     msg2 "External configuration file $_EXT_CONFIG_PATH will be used and will override customization.cfg values."
-    cat "$_EXT_CONFIG_PATH" >> "$_where"/BIG_UGLY_FROGMINER
+    cat "$_EXT_CONFIG_PATH" >> "$_where"/TKT_CONFIG
   fi
 
-  declare -p -x >> "$_where"/BIG_UGLY_FROGMINER
+  declare -p -x >> "$_where"/TKT_CONFIG
 
-  echo -e "_ispkgbuild=\"true\"\n_distro=\"Arch\"\n_where=\"$PWD\"" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_ispkgbuild=\"true\"\n_distro=\"Arch\"\n_where=\"$PWD\"" >> "$_where"/TKT_CONFIG
 
-  source "$_where"/BIG_UGLY_FROGMINER
+  source "$_where"/TKT_CONFIG
   source "$_where"/kconfigs/prepare
 
   _tkg_initscript
 fi
 
-source "$_where"/BIG_UGLY_FROGMINER
+source "$_where"/TKT_CONFIG
 
 if [ -n "$_custom_pkgbase" ]; then
   pkgbase="${_custom_pkgbase}"
@@ -55,6 +56,8 @@ license=('GPL2')
 makedepends=('bison' 'xmlto' 'docbook-xsl' 'inetutils' 'bc' 'libelf' 'pahole' 'patchutils' 'flex' 'python-sphinx' 'python-sphinx_rtd_theme' 'graphviz' 'imagemagick' 'git' 'cpio' 'perl' 'tar' 'xz' 'wget')
 if [ "$_compiler_name" = "-llvm" ]; then
   makedepends+=( 'lld' 'clang' 'llvm')
+else
+  _compiler_name="-gcc"
 fi
 optdepends=('schedtool')
 options=('!strip')
@@ -69,7 +72,7 @@ export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
-  source "$_where"/BIG_UGLY_FROGMINER
+  source "$_where"/TKT_CONFIG
   source "$_where"/kconfigs/prepare
 
   rm -rf $pkgdir # Nuke the entire pkg folder so it'll get regenerated clean on next build
@@ -80,7 +83,7 @@ prepare() {
 }
 
 build() {
-  source "$_where"/BIG_UGLY_FROGMINER
+  source "$_where"/TKT_CONFIG
 
   cd "$_kernel_work_folder_abs"
 
@@ -134,7 +137,7 @@ build() {
 }
 
 hackbase() {
-  source "$_where"/BIG_UGLY_FROGMINER
+  source "$_where"/TKT_CONFIG
 
   pkgdesc="The $pkgdesc kernel and modules"
   depends=('coreutils' 'kmod' 'initramfs')
@@ -207,7 +210,7 @@ hackbase() {
 }
 
 hackheaders() {
-  source "$_where"/BIG_UGLY_FROGMINER
+  source "$_where"/TKT_CONFIG
 
   pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
   provides=("linux-headers=${pkgver}" "${pkgbase}-headers=${pkgver}")
