@@ -1,8 +1,13 @@
 name: Build & Release Latest Kernel
 on:
   schedule:
-    - cron: '17 */12 * * *' # “At minute 17 past every 12th hour.”
+    - cron: '0 0 1 * *' # “Run once a month.”
   workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  deployments: write
 
 jobs:
 
@@ -15,17 +20,8 @@ jobs:
       latest_kernel: ${{ steps.versions.outputs.latest_kernel }}
 
     steps:
-      # Get latest release in repo, so we compare its version
-      # with the latest kernel available so far
-      - name: Get latest release
-        id: latest_release
-        uses: pozetroninc/github-action-get-latest-release@master
-        with:
-          repository: ${{ github.repository }}
-        # it fails when there's no release
-        continue-on-error: true
 
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
       - name: Get latest kernel version
@@ -37,7 +33,7 @@ jobs:
             | cut --delimiter='/' --fields=3 | grep "$1" | tail -n 1
           }
 
-          grep "_current_kernels=(" linux-tkg-config/prepare > current_kernels.txt
+          grep "_current_kernels=(" kconfigs/prepare > current_kernels.txt
           source current_kernels.txt
 
           latest_kernel=`get_latest_kernel "${_current_kernels[0]}"`
@@ -49,18 +45,19 @@ jobs:
           echo "latest_kernel=$latest_kernel" >> $GITHUB_OUTPUT
 
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        _cpusched: [eevdf, bore, pds, bmq]
-        os: [arch, ubuntu, fedora]
-    uses: ./.github/workflows/builder-dispatcher.yml
-    with:
-      _cpusched: ${{ matrix._cpusched }}
-      os: ${{ matrix.os }}
-
-    needs: [kver-checks]
-    if: needs.kver-checks.outputs.latest_kernel != needs.kver-checks.outputs.latest_release
+      needs: [kver-checks]
+      if: needs.kver-checks.outputs.latest_kernel != needs.kver-checks.outputs.latest_release
+      strategy:
+        fail-fast: false
+        matrix:
+          _cpusched: [eevdf, bore]
+          compiler: [gcc, llvm]
+          os: [arch, ubuntu, fedora]
+      uses: ./.github/workflows/builder-dispatcher.yml
+      with:
+        _cpusched: ${{ matrix._cpusched }}
+        compiler: ${{ matrix.compiler }}
+        os: ${{ matrix.os }}
 
   make-release:
 
@@ -83,7 +80,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           files_list=$(find *-kernel-packages-* -type f | paste -sd' ')
-          gh release create ${{ needs.kver-checks.outputs.latest_kernel }} $files_list --latest \
-          --title 'diet linux-tkg ${{ needs.kver-checks.outputs.latest_kernel }}' \
-          --notes 'This is a version of linux-tkg built with the option `_kernel_on_diet` enabled.
-          If you encounter issues with it, please build the kernel locally with that option disabled.'
+          # Generate a dynamic tag, e.g., v6.15-20250603-0121
+          dynamic_tag="${{ needs.kver-checks.outputs.latest_kernel }}-$(date +'%Y%m%d-%H%M')"
+          gh release create "$dynamic_tag" $files_list --latest \
+            --title "TKT $dynamic_tag GitHub CI Autobuilt diet kernels." \
+            --notes 'This is a precompiled version of TKT built with the option `_kernel_on_diet` enabled.
+            If you encounter issues with it, please build the kernel locally with that option disabled.'

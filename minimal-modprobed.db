@@ -30,6 +30,7 @@ amd_atl
 amd_pmc
 amd_pstate
 amdgpu
+amdkfd
 amdxcp
 apple_mfi_fastcharge
 appletalk
@@ -48,6 +49,7 @@ atl1c
 auth_rpcgss
 autofs4
 battery
+bcache
 bch
 binder
 binfmt_misc
@@ -62,6 +64,7 @@ btbcm
 btcoexist
 btintel
 btmtk
+btrfs
 btrfs
 btrtl
 btusb
@@ -118,6 +121,7 @@ dm_round_robin
 dmi_sysfs
 dns_resolver
 drm
+drm_amdgpu
 drm_buddy
 drm_display_helper
 drm_exec
@@ -126,6 +130,8 @@ drm_panel_orientation_quirks
 drm_suballoc_helper
 drm_ttm_helper
 dvb_core
+e1000
+e1000e
 ebtable_filter
 ebtables
 ec_sys
@@ -264,8 +270,10 @@ irqbypass
 isofs
 it87
 iw_cm
+iwldvm
 iwlmei
 iwlmvm
+iwlwifi
 iwlwifi
 jbd2
 jc42
@@ -333,6 +341,7 @@ mt7921_common
 mt7921e
 mtd
 mxm_wmi
+mxm_wmi
 nandcore
 nbd
 nct6683
@@ -388,6 +397,10 @@ nls_iso8859_1
 nls_utf8
 nouveau
 ntfs3
+nvidia
+nvidia_drm
+nvidia_modeset
+nvidia_uvm
 nvidia_wmi_ec_backlight
 nvme
 nvme_auth
@@ -436,6 +449,7 @@ rave_sp
 raw_diag
 rc_core
 realtek
+realtek
 rfcomm
 rfkill
 rndis_host
@@ -453,8 +467,11 @@ rtl8723be
 rtl8821ae
 rtl_pci
 rtlwifi
+rtlwifi
 rtsx_pci
 rtsx_pci_sdmmc
+rtsx_usb
+rtsx_usb_sdmmc
 rtw88_8821c
 rtw88_8821ce
 rtw88_core
@@ -487,9 +504,17 @@ snd_aloop
 snd_compress
 snd_ctl_led
 snd_hda_codec
+snd_hda_codec_analog
+snd_hda_codec_atihdmi
+snd_hda_codec_ca0132
+snd_hda_codec_cirrus
+snd_hda_codec_cmedia
+snd_hda_codec_conexant
 snd_hda_codec_generic
 snd_hda_codec_hdmi
 snd_hda_codec_realtek
+snd_hda_codec_si3054
+snd_hda_codec_via
 snd_hda_core
 snd_hda_ext_core
 snd_hda_intel
@@ -536,7 +561,9 @@ snd_sof_xtensa_dsp
 snd_timer
 snd_ua101
 snd_ump
+snd_usb_6fire
 snd_usb_audio
+snd_usb_caiaq
 snd_usb_us122l
 snd_usb_usx2y
 snd_usbmidi_lib
@@ -570,6 +597,7 @@ tda9887
 tea5761
 tea5767
 tee
+tg3
 tg3
 thermal
 thinkpad_acpi
@@ -605,14 +633,17 @@ uio_pdrv_genirq
 unix_diag
 usb_common
 usb_storage
+usb_storage
 usb_wwan
 usbcore
+usbhid
 usbhid
 usbip_core
 usbip_host
 usbmon
 usbnet
 uvc
+uvcvideo
 uvcvideo
 uvesafb
 v4l2_dv_timings
@@ -646,6 +677,7 @@ wacom
 watchdog
 wireguard
 wireless_hotkey
+wl
 wmi
 wmi_bmof
 x86_pkg_temp_thermal
