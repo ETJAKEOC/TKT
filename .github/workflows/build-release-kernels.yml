@@ -25,7 +25,7 @@ jobs:
         # it fails when there's no release
         continue-on-error: true
 
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
       - name: Get latest kernel version
@@ -37,7 +37,7 @@ jobs:
             | cut --delimiter='/' --fields=3 | grep "$1" | tail -n 1
           }
 
-          grep "_current_kernels=(" linux-tkg-config/prepare > current_kernels.txt
+          grep "_current_kernels=(" kconfigs/prepare > current_kernels.txt
           source current_kernels.txt
 
           latest_kernel=`get_latest_kernel "${_current_kernels[0]}"`
@@ -84,6 +84,6 @@ jobs:
         run: |
           files_list=$(find *-kernel-packages-* -type f | paste -sd' ')
           gh release create ${{ needs.kver-checks.outputs.latest_kernel }} $files_list --latest \
-          --title 'diet linux-tkg ${{ needs.kver-checks.outputs.latest_kernel }}' \
-          --notes 'This is a version of linux-tkg built with the option `_kernel_on_diet` enabled.
+          --title 'diet TKT ${{ needs.kver-checks.outputs.latest_kernel }}' \
+          --notes 'This is a version of TKT built with the option `_kernel_on_diet` enabled.
           If you encounter issues with it, please build the kernel locally with that option disabled.'

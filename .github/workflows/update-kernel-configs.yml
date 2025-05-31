@@ -28,13 +28,13 @@ jobs:
           echo "latest=$(cat latest-upstream-config)" >> $GITHUB_OUTPUT
           echo "kver=$(cat latest-upstream-config | cut -d. -f 1,2 )" >> $GITHUB_OUTPUT
 
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
       - name: Update config file
         id: update-config
         run: |
-          cd linux-tkg-config/${{ steps.upstream-config.outputs.kver }}
+          cd kconfigs/${{ steps.upstream-config.outputs.kver }}
           wget ${{ matrix.link }}/-/raw/main/config -O config.x86_64
           if git diff --exit-code config.x86_64
           then

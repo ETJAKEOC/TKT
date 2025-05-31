@@ -6,7 +6,6 @@ on:
         required: true
         type: string
 
-
 env:
   _processor_opt: "x86-64"
   _git_mirror: "gregkh"
@@ -14,14 +13,12 @@ env:
   _debugdisable: "true"
   _noccache: "true"
   _STRIP: "true"
-  _kernel_on_diet: "true"
+  _kernel_on_diet: "false"
   _kernel_work_folder: "/tmp"
   _kernel_source_folder: "/tmp"
   # _modprobeddb: "true"
   _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
-  _nofallback: "true"
-
-
+  _nofallback: "false"
 
 jobs:
   build-kernel:
@@ -32,39 +29,25 @@ jobs:
     container: archlinux:latest
 
     steps:
-      # We need to install git so the checkout is done with it
-      #- name: Update mirrorlist
-      #  run: |
-      #    pacman -Sy --noconfirm reflector
-      #    reflector --latest 50 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
+      - name: Update mirrorlist
+        run: |
+          pacman -Sy --noconfirm reflector rsync curl wget aria2
+          reflector --fastest 10 --verbose --country US --protocol rsync,https,http --latest 10 --age 1 --sort rate --save /etc/pacman.d/mirrorlist
 
-      - name: Install git
-        run: pacman -Syu --noconfirm git
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm git clang llvm lld base-devel sudo bison xmlto docbook-xsl inetutils bc libelf pahole patchutils flex python-sphinx python-sphinx_rtd_theme graphviz imagemagick git cpio perl tar xz schedtool coreutils kmod initramfs pahole
 
-      - name: Checkout linux-tkg
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
-      # 1. Install deps needed for building and sudo
-      # 2. create a user "user" and give it passwordless sudo
-      #    and necessary permissions
-      #    because makepkg absolutely refuses to run as root
       - name: Prepare for makepkg
         run: |
-          pacman -Syu --noconfirm base-devel sudo
           useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown user -R ..
           chown user -R /tmp
 
-      # - name: "[debug] make dummy modprobed-db file for faster ci"
-      #   run: |
-      #     touch "${_modprobeddb_db_path}"
-      #     echo "${_modprobeddb_db_path}"
-
       - name: Compile Kernel
         run: su --preserve-environment user -c "yes '' | makepkg --noconfirm -s"
-        # run: |
-        #   mkdir -p "$PKGDEST"
-        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
 
       - name: rename kernel config
         run: mv kernelconfig.new kernelconfig.arch.${{ env._cpusched }}.txt

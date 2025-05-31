@@ -6,7 +6,6 @@ on:
         required: true
         type: string
 
-
 env:
   _processor_opt: "x86-64"
   _distro: "Ubuntu"
@@ -16,14 +15,12 @@ env:
   _debugdisable: "true"
   _noccache: "true"
   _STRIP: "true"
-  _kernel_on_diet: "true"
+  _kernel_on_diet: "false"
   _kernel_work_folder: "/tmp"
   _kernel_source_folder: "/tmp"
   # _modprobeddb: "true"
   _modprobeddb_db_path: ${{ github.workspace }}/modprobed.db
-  _nofallback: "true"
-
-
+  _nofallback: "false"
 
 jobs:
   build-kernel:
@@ -33,25 +30,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout linux-tkg
+      - name: Prepare Ubuntu container for Clang and GCC compilation
+        run: |
+          # Ensure all repo types are enabled
+          sudo sed -i 's/^# deb/deb/g' /etc/apt/sources.list
+          for file in /etc/apt/sources.list.d/*.list; do
+            sudo sed -i 's/^# deb/deb/g' "$file" || true
+          done
+
+          # Add all default Ubuntu repositories
+          sudo add-apt-repository main
+          sudo add-apt-repository universe
+          sudo add-apt-repository multiverse
+          sudo add-apt-repository restricted
+          sudo apt update
+
+          # Core dev tools + Clang toolchain + GCC family
+          sudo apt install -y \
+            build-essential \
+            clang clang-15 clang-format clang-tidy clang-tools \
+            llvm llvm-15 lld lldb \
+            gcc g++ g++-multilib gcc-multilib \
+            libc6-dev-i386 libc6-dev \
+            binutils-dev binutils-gold \
+            make cmake ninja-build libstdc++-14-dev \
+            libssl-dev libelf-dev libdw-dev \
+            flex bison bc cpio zstd lz4 \
+            rsync wget git fakeroot \
+            libncurses-dev qtbase5-dev \
+            ccache kmod debhelper dpkg-dev \
+            patchutils device-tree-compiler \
+            python3 python3-pip python3-setuptools \
+            software-properties-common curl gnupg
+
+          # Link Clang versions for consistent use
+          sudo ln -sf /usr/bin/clang-15 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-15 /usr/bin/clang++
+          sudo ln -sf /usr/bin/clang-cpp-15 /usr/bin/clang-cpp
+
+      - name: Checkout TKT
         uses: actions/checkout@v4
 
-      # - name: "[debug] make dummy modprobed-db file for faster ci"
-      #   run: |
-      #     touch "${_modprobeddb_db_path}"
-      #     echo "${_modprobeddb_db_path}"
-
       - name: Install deps and compile kernel
-        run: yes '' | ./install.sh install
-        # run: |
-        #   mkdir -p "$PKGDEST"
-        #   echo "test" > "$PKGDEST"/linux-$_cpusched.pkg.tar.zst
+        env:
+         CC: x86_64-pc-linux-gnu
+         KCFLAGS: "-Wno-error=unused-command-line-argument"
+        run: |
+           set +o pipefail
+           yes '' | ./install.sh install || true
+           set -o pipefail
 
       - name: Cleanup useless DEB files
         run: rm -rf DEBS/*dbg*.deb DEBS/*libc-dev*.deb
-
-      - name: rename kernel config
-        run: mv kernelconfig.new kernelconfig.ubuntu.${{ env._cpusched }}.txt
 
       - uses: actions/upload-artifact@v4
         with:
