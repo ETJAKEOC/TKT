@@ -53,8 +53,7 @@ fi
 
 . current_env
 
-if [[ "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
-  # using script is enabled, but we are not within the script sub-command
+if [[ "$_distro" != "Slackware" && "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
   export SCRIPT=1
   msg2 "Using script"
   /usr/bin/script -q -e -c "$0 $@" shell-output.log
@@ -68,7 +67,7 @@ source kconfigs/prepare
 _distro_prompt() {
   echo "Which linux distribution are you running ?"
   echo "if it's not on the list, chose the closest one to it: Fedora/Suse for RPM, Ubuntu/Debian for DEB"
-  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Generic"
+  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Slackware" "Generic"
   _distro="${_selected_value}"
 }
 
@@ -84,7 +83,14 @@ _install_dependencies() {
     sudo dnf install openssl-devel-engine hostname perl bison ccache curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync -y ${clang_deps} -y
   elif [ "$_distro" = "Suse" ]; then
     msg2 "Installing dependencies"
-    sudo zypper install -y hostname bc bison ccache curl dwarves elfutils flex gcc-c++ git libXi-devel libelf-devel libqt5-qtbase-common-devel libqt5-qtbase-devel lz4 make ncurses-devel openssl-devel patch pesign rpm-build rpmdevtools schedtool python3 rsync zstd ${clang_deps}
+    sudo zypper install -y bc bison ccache clang curl dwarves flex gcc-c++ gawk git hostname \
+         kernel-devel libXi-devel libuuid-devel lld llvm lz4 make ncurses-devel libnuma-devel \
+         libopenssl-devel libdw-devel patchutils perl pesign python3 python311-devel python311-pip \
+         libqt5-qtbase-devel rpm-build rsync wget zstd \
+         libelf-devel systemd-devel ${clang_deps}
+  elif [ "$_distro" = "Slackware" ]; then
+    msg2 "Installing dependencies"
+    sudo slackpkg -batch=on -default_answer=y install bash bc bison binutils brotli clang cpio curl cyrus-sasl dwarves elfutils fakeroot fakeroot-ng file flex gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust gc glibc git guile gzip kernel-headers kmod libedit libelf libxml2 lld llvm lz4 lzop m4 make ncurses nghttp2 nghttp3 openssl patchutils perl python3 python3-pip rsync spirv-llvm-translator sudo tar time wget xxHash xz zstd ${clang_deps} || true
   fi
 }
 
@@ -102,7 +108,7 @@ fi
 
 if [ "$1" = "install" ] || [ "$1" = "config" ]; then
 
-  if [[ -z "$_distro" || ! "$_distro" =~ ^(Ubuntu|Debian|Fedora|Suse|Gentoo|Generic)$ ]]; then
+  if [[ -z "$_distro" || ! "$_distro" =~ ^(Ubuntu|Debian|Fedora|Suse|Gentoo|Slackware|Generic)$ ]]; then
     msg2 "Variable \"_distro\" in \"customization.cfg\" has been set to an unkown value. Prompting..."
     _distro_prompt
   fi
@@ -317,7 +323,7 @@ if [ "$1" = "install" ]; then
       msg2 "Install successful"
     fi
 
-  elif [[ "$_distro" =~ ^(Gentoo|Generic)$ ]]; then
+  elif [[ "$_distro" == "Slackware" ]]; then
 
     ./scripts/config --set-str LOCALVERSION "-${_kernel_flavor}"
 
@@ -328,15 +334,22 @@ if [ "$1" = "install" ]; then
     fi
 
     msg2 "Building kernel"
-    make ${llvm_opt} -j ${_thread_num}
+    make ${llvm_opt} -j ${_thread_num} || { echo "Kernel build failed"; exit 1; }
     msg2 "Build successful"
 
     if [ "$_STRIP" = "true" ]; then
       echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux"
+      strip -v $STRIP_STATIC "vmlinux" || echo "strip failed"
     fi
 
-    _headers_folder_name="linux-$_kernelname"
+    PKGROOT="$_where/SLACKPKGS"
+
+    msg2 "Preparing packaging directories..."
+    mkdir -p "$PKGROOT/boot"
+    mkdir -p "$PKGROOT/lib/modules"
+    mkdir -p "$PKGROOT/install"
+    headers_dest="$PKGROOT/usr/src/linux-$_kernelname"
+    mkdir -p "$headers_dest/arch/x86"
 
     msg2 "Removing unneeded architectures..."
     for arch in arch/*/; do
@@ -364,6 +377,130 @@ if [ "$1" = "install" ]; then
           strip -v $STRIP_SHARED "$file" ;;
       esac
     done < <(find . -type f -perm -u+x ! -name vmlinux -print0)
+
+    msg2 "Copying kernel files..."
+    cp -a arch/x86/boot/bzImage "$PKGROOT/boot/vmlinuz-$_kernelname"
+    cp -a System.map "$PKGROOT/boot/System.map-$_kernelname"
+    cp -a .config "$PKGROOT/boot/config-$_kernelname"
+    rsync -aHAX --delete-during $_where/linux-src-git/ "$headers_dest"
+
+    msg2 "Installing modules..."
+    if [ "$_STRIP" = "true" ]; then
+      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP=1 modules_install
+    else
+      make INSTALL_MOD_PATH="$PKGROOT" modules_install
+    fi
+
+    # Fix up module metadata (some tools depend on this)
+    msg2 "Running depmod on packaged modules..."
+    sudo depmod -b "$PKGROOT" "$_kernelname"
+
+    msg2 "Installing headers..."
+    cp -a include "$headers_dest/"
+    cp -a arch/x86/include "$headers_dest/arch/x86/"
+    cp Makefile Kconfig .config "$headers_dest/"
+    cp -a scripts "$headers_dest/"
+
+    # Symlink for dkms/build expectations
+    ln -sf "/usr/src/linux-$_kernelname" "$PKGROOT/lib/modules/$_kernelname/build"
+    ln -sf "/usr/src/linux-$_kernelname" "$PKGROOT/lib/modules/$_kernelname/source"
+
+    # Cleanup headers junk files
+    find "$headers_dest" -type f \( \
+      -name '*.o' -o \
+      -name '*.a' -o \
+      -name '*.ko' -o \
+      -name '*.cmd' -o \
+      -name '*.mod.c' -o \
+      -name '*.tmp' -o \
+      -name '.*.cmd' -o \
+      -name '*.order' -o \
+      -name '*.symvers' -o \
+      -name '*.mod' -o \
+      -name 'vmlinux*' \) -delete
+
+    rm -rf "$headers_dest"/{.git,.tmp_versions,modules.order,Module.symvers,build,source}
+
+    msg2 "Creating slack-desc..."
+    cat <<EOF > "$PKGROOT/install/slack-desc"
+kernel-${_kernel_flavor}: Slackware TKT Kernel
+kernel-${_kernel_flavor}: This is a generic kernel built from kernel.org sources.
+kernel-${_kernel_flavor}: Packaged by TKT kernel toolkit.
+EOF
+
+    # Detect root device
+    _rootdev=$(findmnt -n -o SOURCE /)
+
+    msg2 "Creating doinst.sh..."
+    cat <<EOF > "$PKGROOT/install/doinst.sh"
+#!/bin/sh
+
+# Auto-generate initrd
+KERNEL_VERSION="$_kernelname"
+MKINITRD_CONF="/etc/mkinitrd.conf"
+INITRD="/boot/initrd-\$KERNEL_VERSION.gz"
+
+if [ -f "\$MKINITRD_CONF" ]; then
+  echo "Generating initrd..."
+  mkinitrd -F -k \$KERNEL_VERSION -c \$MKINITRD_CONF -o \$INITRD
+else
+  echo "Generating default initrd..."
+  mkinitrd -c -k \$KERNEL_VERSION -m ext4 -o \$INITRD
+fi
+
+# Add lilo entry if using lilo
+if [ -x /sbin/lilo ]; then
+  if grep -q "vmlinuz-\$KERNEL_VERSION" /etc/lilo.conf; then
+    echo "lilo.conf already contains vmlinuz-\$KERNEL_VERSION"
+  else
+    echo "Appending new entry to /etc/lilo.conf..."
+    cat <<LILOBLOCK >> /etc/lilo.conf
+
+image = /boot/vmlinuz-\$KERNEL_VERSION
+  initrd = /boot/initrd-\$KERNEL_VERSION.gz
+  root = ${_rootdev}
+  label = ${_kernel_flavor}
+  read-only
+
+LILOBLOCK
+  fi
+
+  echo "Running lilo..."
+  lilo
+fi
+EOF
+
+    sudo chmod 755 "$PKGROOT/install/doinst.sh"
+
+    msg2 "Packaging .txz archive..."
+    cd "$PKGROOT" || exit 1
+    find . -type d -exec sudo chmod 755 {} +
+    find . -type f -exec sudo chmod 644 {} +
+    sudo chmod 755 ./boot/vmlinuz-$_kernelname
+    tar --numeric-owner -cf - boot lib usr install | xz -9e > "Slackware-kernel-$_kernelname-TKT-x86_64-1.txz"
+
+    msg2 "Slackware package created."
+
+  elif [[ "$_distro" =~ ^(Gentoo|Generic)$ ]]; then
+
+    ./scripts/config --set-str LOCALVERSION "-${_kernel_flavor}"
+
+    if [[ "$_sub" = rc* ]]; then
+      _kernelname=$_basekernel.${_kernel_subver}-${_sub}-$_kernel_flavor
+    else
+      _kernelname=$_basekernel.${_kernel_subver}-$_kernel_flavor
+    fi
+
+    msg2 "Building kernel"
+    make ${llvm_opt} -j ${_thread_num}
+    msg2 "Build successful"
+
+    if [ "$_STRIP" = "true" ]; then
+      echo "Stripping vmlinux..."
+      strip -v $STRIP_STATIC "vmlinux"
+    fi
+
+    _headers_folder_name="linux-$_kernelname"
 
     echo -e "\n\n"
 

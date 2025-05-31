@@ -235,9 +235,9 @@ index a54663f2e2ab9f..7ffad3eb0a0150 100644
  			switch (amdgpu_ip_version(adev, MP1_HWIP, 0)) {
  			case IP_VERSION(13, 0, 2):
 -			case IP_VERSION(13, 0, 6):
+ 			case IP_VERSION(13, 0, 12):
  			case IP_VERSION(13, 0, 14):
  			case IP_VERSION(11, 0, 7):
- 			case IP_VERSION(11, 0, 11):
 
 From f03da22e562a7d65a97926a76f61daeef8a1eb0d Mon Sep 17 00:00:00 2001
 From: Steven Barrett <steven@liquorix.net>
@@ -722,90 +722,3 @@ index ab940ec698c0f5..a46929e3378347 100644
  
  		goto unlock;
  	}
-
-From 908b9f8ebb69a9d087b319e37b45b54c6f588e16 Mon Sep 17 00:00:00 2001
-From: Christoph Hellwig <hch@lst.de>
-Date: Tue, 20 May 2025 15:54:20 +0200
-Subject: [PATCH] loop: don't require ->write_iter for writable files in
- loop_configure
-
-Block devices can be opened read-write even if they can't be written to
-for historic reasons.  Remove the check requiring file->f_op->write_iter
-when the block devices was opened in loop_configure. The call to
-loop_check_backing_file just below ensures the ->write_iter is present
-for backing files opened for writing, which is the only check that is
-actually needed.
-
-Fixes: f5c84eff634b ("loop: Add sanity check for read/write_iter")
-Reported-by: Christian Hesse <mail@eworm.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Link: https://lore.kernel.org/r/20250520135420.1177312-1-hch@lst.de
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cherry-picked-for: https://lore.kernel.org/r/20250519175640.2fcac001@leda.eworm.net
----
- drivers/block/loop.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index b378d2aa49f069..34bc46d1f3f353 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -972,9 +972,6 @@ static int loop_configure(struct loop_device *lo, blk_mode_t mode,
- 	if (!file)
- 		return -EBADF;
- 
--	if ((mode & BLK_OPEN_WRITE) && !file->f_op->write_iter)
--		return -EINVAL;
--
- 	error = loop_check_backing_file(file);
- 	if (error)
- 		return error;
-
-From 30dd9945fd79d33a049da4e52984c9bc07450de2 Mon Sep 17 00:00:00 2001
-From: Aurabindo Pillai <aurabindo.pillai@amd.com>
-Date: Wed, 21 May 2025 16:10:57 -0400
-Subject: [PATCH] Revert "drm/amd/display: more liberal vmin/vmax update for
- freesync"
-
-This reverts commit 219898d29c438d8ec34a5560fac4ea8f6b8d4f20 since it
-causes regressions on certain configs. Revert until the issue can be
-isolated and debugged.
-
-Closes: https://gitlab.freedesktop.org/drm/amd/-/issues/4238
-Signed-off-by: Aurabindo Pillai <aurabindo.pillai@amd.com>
-Cherry-picked-for: https://gitlab.archlinux.org/archlinux/packaging/packages/linux/-/issues/139
----
- .../gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c    | 16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index 2dbd71fbae28a5..e4f0517f0f2b23 100644
---- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-+++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-@@ -668,21 +668,15 @@ static void dm_crtc_high_irq(void *interrupt_params)
- 	spin_lock_irqsave(&adev_to_drm(adev)->event_lock, flags);
- 
- 	if (acrtc->dm_irq_params.stream &&
--		acrtc->dm_irq_params.vrr_params.supported) {
--		bool replay_en = acrtc->dm_irq_params.stream->link->replay_settings.replay_feature_enabled;
--		bool psr_en = acrtc->dm_irq_params.stream->link->psr_settings.psr_feature_enabled;
--		bool fs_active_var_en = acrtc->dm_irq_params.freesync_config.state == VRR_STATE_ACTIVE_VARIABLE;
--
-+	    acrtc->dm_irq_params.vrr_params.supported &&
-+	    acrtc->dm_irq_params.freesync_config.state ==
-+		    VRR_STATE_ACTIVE_VARIABLE) {
- 		mod_freesync_handle_v_update(adev->dm.freesync_module,
- 					     acrtc->dm_irq_params.stream,
- 					     &acrtc->dm_irq_params.vrr_params);
- 
--		/* update vmin_vmax only if freesync is enabled, or only if PSR and REPLAY are disabled */
--		if (fs_active_var_en || (!fs_active_var_en && !replay_en && !psr_en)) {
--			dc_stream_adjust_vmin_vmax(adev->dm.dc,
--					acrtc->dm_irq_params.stream,
--					&acrtc->dm_irq_params.vrr_params.adjust);
--		}
-+		dc_stream_adjust_vmin_vmax(adev->dm.dc, acrtc->dm_irq_params.stream,
-+					   &acrtc->dm_irq_params.vrr_params.adjust);
- 	}
- 
- 	/*

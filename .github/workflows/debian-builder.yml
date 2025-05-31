@@ -1,4 +1,4 @@
-name: Build Ubuntu kernel
+name: Build Debian kernel
 on:
   workflow_call:
     inputs:
@@ -11,7 +11,7 @@ on:
 
 env:
   _processor_opt: "x86-64"
-  _distro: "Ubuntu"
+  _distro: "Debian"
   _git_mirror: "gregkh"
   _logging_use_script: "no"
   _install_after_building: "no"
@@ -26,39 +26,30 @@ jobs:
     env:
       _cpusched: ${{ inputs._cpusched }}
       compiler: ${{ inputs.compiler }}
-
     runs-on: ubuntu-latest
+    container: debian:stable-slim
 
     steps:
       - name: Install dependencies and cleanup
         run: |
-          # Ensure all repo types are enabled
-          sudo sed -i 's/^# deb/deb/g' /etc/apt/sources.list
-          for file in /etc/apt/sources.list.d/*.list; do
-            sudo sed -i 's/^# deb/deb/g' "$file" || true
-          done
-
-          # Add all default Ubuntu repositories
-          sudo add-apt-repository main
-          sudo add-apt-repository universe
-          sudo add-apt-repository multiverse
-          sudo add-apt-repository restricted
-          sudo apt update
-
-          # Core dev tools + Clang toolchain + GCC family
-          sudo apt install -y \
-          bc binutils binutils-dev binutils-gold bison build-essential ccache clang clang-15 clang-format clang-tidy clang-tools \
+          rm -rf /etc/apt/sources.list
+          echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list
+          apt-get update
+          apt-mark unhold libudev1 libudev-dev
+          apt-get upgrade
+          apt-get install -y --allow-downgrades \
+          bc binutils binutils-dev binutils-gold bison build-essential ccache clang clang-format clang-tidy clang-tools \
           cmake cpio curl debhelper device-tree-compiler dpkg-dev dwarves fakeroot flex g++ g++-multilib gcc gcc-multilib \
           git gnupg kmod libc6-dev libc6-dev-i386 libdw-dev libelf-dev liblz4-tool libncurses-dev libnuma-dev libperl-dev \
-          libssl-dev libstdc++-14-dev libudev-dev llvm llvm-15 lld lz4 make ninja-build patchutils python3 python3-pip python3-setuptools \
-          qtbase5-dev rsync schedtool software-properties-common wget zstd
-
-          # Link Clang versions for consistent use
-          sudo ln -sf /usr/bin/clang-15 /usr/bin/clang
-          sudo ln -sf /usr/bin/clang++-15 /usr/bin/clang++
-          sudo ln -sf /usr/bin/clang-cpp-15 /usr/bin/clang-cpp
-
-          sudo rm -rf /var/cache/apt/archives/*
+          libssl-dev libstdc++-12-dev libudev-dev llvm lld lz4 make ninja-build patchutils python3 python3-pip python3-setuptools \
+          qtbase5-dev rsync schedtool wget zstd
+          apt-get clean
+          if command -v clang-15; then
+            ln -sf /usr/bin/clang-15 /usr/bin/clang
+            ln -sf /usr/bin/clang++-15 /usr/bin/clang++
+            ln -sf /usr/bin/clang-cpp-15 /usr/bin/clang-cpp
+          fi
+          rm -rf /var/cache/apt/archives/*
 
       - name: Checkout TKT
         uses: actions/checkout@v4
@@ -68,12 +59,13 @@ jobs:
           _cpusched: ${{ inputs._cpusched }}
           compiler: ${{ inputs.compiler }}
           CC: x86_64-pc-linux-gnu
+        shell: bash
         run: |
           git config --global --add safe.directory "$(pwd)"
           if [ "${{ inputs.compiler }}" = "llvm" ] || [ "${{ inputs.compiler }}" = "clang" ]; then
             export KCFLAGS="$KCFLAGS -Wold-style-declaration"
           fi
-          sed -i 's/^_distro=".*"/_distro="Ubuntu"/' customization.cfg
+          sed -i 's/^_distro=".*"/_distro="Debian"/' customization.cfg
           sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
           set +o pipefail
           yes '' | ./install.sh install || true
@@ -87,24 +79,24 @@ jobs:
           arch=$(uname -m)
           for file in DEBS/linux*.deb; do
             base=$(basename "$file")
-            mv "$file" "DEBS/Ubuntu-linux-${arch}-${base#linux-}"
+            mv "$file" "DEBS/Debian-linux-${arch}-${base#linux-}"
           done
 
       - name: Package DEB files
         run: |
-          tar czf Ubuntu-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz DEBS/*.deb
+          tar czf Debian-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz DEBS/*.deb
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ubuntu-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
-          path: Ubuntu-linux-*.tar.gz
+          name: debian-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: Debian-linux-*.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           tag_name: ${{ github.ref_name }}
-          name: "Ubuntu Kernel Release ${{ github.ref_name }}"
+          name: "Debian Kernel Release ${{ github.ref_name }}"
           draft: false
           prerelease: false
         env:
@@ -114,6 +106,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: Ubuntu-linux-*.tar.gz
+          files: Debian-linux-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

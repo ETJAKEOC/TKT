@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of kernels that are maintained upstream
-_current_kernels=("6.15" "6.14" "6.12" "6.6" "6.1")
+_current_kernels=("6.16" "6.15" "6.14" "6.12" "6.6" "6.1")
 
 # List of kernels that are no longer maintained either upstream or locally
 _eol_kernels=("6.13" "6.11" "6.10" "6.9" "6.8" "6.7" "6.5" "6.4" "6.3" "6.2" "6.0")
@@ -250,7 +250,7 @@ _set_kver_internal_vars() {
     _default_cpu_sched="eevdf"
   fi
 
-  echo -e "_basekernel='$_basekernel'\n_basever='$_basever'\n_sub='$_sub'\n_kver='$_kver'\n_default_cpu_sched='$_default_cpu_sched'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_basekernel='$_basekernel'\n_basever='$_basever'\n_sub='$_sub'\n_kver='$_kver'\n_default_cpu_sched='$_default_cpu_sched'" >> "$_where"/TKT_CONFIG
 }
 
 _set_kernel_version() {
@@ -311,7 +311,7 @@ _set_kernel_version() {
 
     _kernel_git_tag="$_selected_value"
   fi
-  echo -e "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/TKT_CONFIG
 }
 
 _set_cpu_scheduler() {
@@ -375,7 +375,7 @@ _set_cpu_scheduler() {
 
   msg2 "Using $_cpusched CPU schduler"
 
-  echo -e "_cpusched='$_cpusched'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_cpusched='$_cpusched'" >> "$_where"/TKT_CONFIG
 }
 
 _set_compiler(){
@@ -396,7 +396,7 @@ _set_compiler(){
 
   if [ "$_compiler" = "llvm" ]; then
     _compiler_name="-llvm"
-    llvm_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=${_llvm_ias:-0}"
+    compiler_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=${_llvm_ias:-0}"
 
     if [ $_kver -ge 512 ]; then
         # LTO Selection
@@ -415,7 +415,7 @@ _set_compiler(){
         _lto_mode="${_lto_mode_array[$_selected_index]}"
       fi
         if [ "$_lto_mode" != "no" ]; then
-                llvm_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1"
+                compiler_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1"
         fi
 
         # PGO Selection
@@ -458,26 +458,26 @@ _set_compiler(){
         fi
     fi
   else # GCC
-    _compiler_name=""
-    llvm_opt=""
+    _compiler_name="-gcc"
+    compiler_opt="CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip"
   fi
 
-  echo -e "_compiler_name='$_compiler_name'\nllvm_opt='$llvm_opt'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_compiler_name='$_compiler_name'\ncompiler_opt='$compiler_opt'" >> "$_where"/TKT_CONFIG
 }
 
 _define_kernel_abs_paths() {
 
   _kernel_work_folder_abs="$_where/$_kernel_work_folder/linux-src-git"
   if [[ "$_kernel_work_folder" == /* ]]; then
-    _kernel_work_folder_abs="$_kernel_work_folder/linux-tkg/linux-src-git"
+    _kernel_work_folder_abs="$_kernel_work_folder/TKT/linux-src-git"
   fi
-  echo -e "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where"/TKT_CONFIG
 
   _kernel_source_folder_abs="$_where/$_kernel_source_folder/linux-kernel.git"
   if [[ "$_kernel_source_folder" == /* ]]; then
-    _kernel_source_folder_abs="$_kernel_source_folder/linux-tkg/linux-kernel.git"
+    _kernel_source_folder_abs="$_kernel_source_folder/TKT/linux-kernel.git"
   fi
-  echo -e "_kernel_source_folder_abs=\"$_kernel_source_folder_abs\"" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_kernel_source_folder_abs=\"$_kernel_source_folder_abs\"" >> "$_where"/TKT_CONFIG
 
 }
 
@@ -580,7 +580,7 @@ _tkg_initscript() {
   _set_compiler
 
   if [ -n "$_custom_pkgbase" ]; then
-    echo -e "_custom_pkgbase=\"$_custom_pkgbase\"" >> "$_where"/BIG_UGLY_FROGMINER
+    echo -e "_custom_pkgbase=\"$_custom_pkgbase\"" >> "$_where"/TKT_CONFIG
   fi
 }
 
@@ -1068,7 +1068,7 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
 
   msg2 "Setting cpu micro architecture to $_processor_opt"
 
-  echo "_processor_opt='$_processor_opt'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo "_processor_opt='$_processor_opt'" >> "$_where"/TKT_CONFIG
 
   # Disable some debugging
   if [ "${_debugdisable}" = "true" ]; then
@@ -1465,67 +1465,6 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     fi
   fi
 
-  # fsync (futex_waitv) support
-  tkgpatch="$srcdir/0007-v${_basekernel}-futex_waitv.patch"
-  if [ -e "$tkgpatch" ]; then
-    if [ -z "$_fsync_backport" ]; then
-      plain ""
-      plain "Enable support for futex_waitv, backported patches for fsync from 5.16 Kernel"
-      plain "! Will disable futex2 patchset !"
-      plain "https://github.com/andrealmeid/futex_waitv_patches"
-      plain "https://github.com/ValveSoftware/wine/pull/128"
-      read -rp "`echo $'    > N/y : '`" CONDITION9;
-    fi
-    if [[ "$CONDITION9" =~ [yY] ]] || [ "$_fsync_backport" = "true" ]; then
-      _msg="Patching fsync support"
-      _tkg_patcher
-      _fsync_futex2="false"
-    fi
-  else
-    _fsync_backport="false"
-  fi
-
-  # fsync legacy support
-  if [[ $_kver > 515 ]] || [[ "$CONDITION9" =~ [yY] ]] || [ "$_fsync_backport" = "true" ]; then
-    tkgpatch="$srcdir/0007-v${_basekernel}-fsync_legacy_via_futex_waitv.patch"
-  else
-    tkgpatch="$srcdir/0007-v${_basekernel}-fsync_legacy.patch"
-  fi
-  if [ -e "$tkgpatch" ]; then
-    if [ -z "$_fsync_legacy" ]; then
-      plain ""
-      plain "Enable support for FUTEX_WAIT_MULTIPLE (opcode 31) - fsync legacy used in Valve Proton 4.11, 5.0 and 5.13"
-      plain "https://steamcommunity.com/games/221410/announcements/detail/2957094910196249305"
-      if [[ "$CONDITION9" =~ [yY] ]] || [ "$_fsync_backport" = "true" ]; then
-        plain "Will be used as a fallback to futex_waitv on older Proton builds if enabled"
-      fi
-      read -rp "`echo $'    > N/y : '`" CONDITION10;
-    fi
-    if [[ "$CONDITION10" =~ [yY] ]] || [ "$_fsync_legacy" = "true" ]; then
-      _msg="Patching fsync legacy support"
-      _tkg_patcher
-    fi
-  fi
-
-  # futex2 support
-  tkgpatch="$srcdir/0007-v${_basekernel}-futex2_interface.patch"
-  if [ -e "$tkgpatch" ]; then
-    if [ -z "$_fsync_futex2" ]; then
-      plain ""
-      plain "Enable support for futex2, a DEPRECATED replacement for esync and fsync in Valve Proton 5.13 experimental"
-      plain "Can be enabled alongside fsync legacy patchset to have a fallback option"
-      plain "https://gitlab.collabora.com/tonyk/linux/-/tree/futex2-dev"
-      plain "https://github.com/ValveSoftware/Proton/issues/4568"
-      read -rp "`echo $'    > N/y : '`" CONDITION11;
-    fi
-    if [[ "$CONDITION11" =~ [yY] ]] || [ "$_fsync_futex2" = "true" ]; then
-      _msg="Patching futex2 support"
-      _tkg_patcher
-      _enable "FUTEX2"
-      _enable "EXPERT" && _expert="true"
-    fi
-  fi
-
   if [ "$_expert" = "true" ]; then
     echo -e "\r# start of config expert\r
 # CONFIG_BASE_SMALL is not set\r
@@ -1724,7 +1663,7 @@ fi
     sed -i '2iexit 0' scripts/depmod.sh
 
     # get kernel version
-    #make prepare ${llvm_opt}
+    #make prepare ${compiler_opt}
   fi
 
   # modprobed-db
@@ -1745,7 +1684,7 @@ fi
       _modprobeddb_db_path="$_where"/"$_modprobeddb_db_path"
     fi
     if [ "$_kernel_on_diet" == "true" ]; then
-      msg2 "Using linux-tkg diet db"
+      msg2 "Using TKT diet db"
       _modprobeddb_db_path="$_where/minimal-modprobed.db"
     fi
     if [ ! -f $_modprobeddb_db_path ]; then
@@ -1753,7 +1692,7 @@ fi
       exit 1
     fi
 
-    yes "" | make LSMOD=$_modprobeddb_db_path localmodconfig ${llvm_opt}
+    yes "" | make LSMOD=$_modprobeddb_db_path localmodconfig ${compiler_opt}
   fi
 
   if [ true = "$_config_fragments" ]; then
@@ -1787,7 +1726,7 @@ fi
 
   # rewrite configuration
   msg2 "Setting config"
-  make ${_config_updating} ${llvm_opt} |& tee -a "$_where"/logs/prepare.log.txt
+  make ${_config_updating} ${compiler_opt} |& tee -a "$_where"/logs/prepare.log.txt
 
   # Modify the kernel config file to fit Fedora SELinux configuration
   if [ "$_distro" = "Fedora" ] ; then
@@ -1811,13 +1750,13 @@ fi
   fi
   if [ 1 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make menuconfig ${llvm_opt}
+    make menuconfig ${compiler_opt}
   elif [ 2 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make nconfig ${llvm_opt}
+    make nconfig ${compiler_opt}
   elif [ 3 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make xconfig ${llvm_opt}
+    make xconfig ${compiler_opt}
   fi
   if [ 1 = "$_menunconfig" ] || [ 2 = "$_menunconfig" ] || [ 3 = "$_menunconfig" ]; then
     if [ -z "${_diffconfig}" ]; then
@@ -1916,7 +1855,7 @@ exit_cleanup() {
   rm -f "$_where"/prepare
 
   # Remove state tracker
-  rm -f "$_where"/BIG_UGLY_FROGMINER
+  rm -f "$_where"/TKT_CONFIG
 
   # Remove ntsync rules file
   rm -f "$_where"/ntsync.rules
