@@ -1,0 +1,108 @@
+name: Build Slackware kernel
+
+on:
+  workflow_call:
+    inputs:
+      _cpusched:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+
+env:
+  _processor_opt: "x86-64"
+  _distro: "Slackware"
+  _git_mirror: "gregkh"
+  _debugdisable: "true"
+  _noccache: "true"
+  _STRIP: "true"
+  _kernel_on_diet: "true"
+  _nofallback: "false"
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    container: aclemons/slackware:current
+    env:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download and install latest ca-certificates from Slackware mirror
+        run: |
+          BASE_URL="https://mirrors.slackware.com/slackware/slackware64-current/slackware64/n/"
+          PKG_NAME=$(curl -s "$BASE_URL" | grep -o 'ca-certificates-[0-9]\{8\}\.txz' | sort -r | head -n 1)
+          echo "https://mirrors.slackware.com/slackware/slackware64-current/" > /etc/slackpkg/mirrors
+          wget --no-check-certificate https://mirrors.slackware.com/slackware/slackware64-current/GPG-KEY
+          wget --no-check-certificate "${BASE_URL}${PKG_NAME}"
+          installpkg "$PKG_NAME"
+          slackpkg update
+          echo "YES" | slackpkg update gpg
+
+      - name: Install dependencies
+        run: slackpkg install gcc make git bc flex bison ncurses perl wget curl cpio rsync patchutils lz4 lzop xz python3 python3-pip dwarves elfutils libelf openssl sudo fakeroot fakeroot-ng time file clang llvm llvm-spirv spirv-llvm-translator lld
+
+      - name: Checkout TKT
+        uses: actions/checkout@v4
+        with:
+          path: TKT
+
+      - name: Adjust compiler and compile Kernel
+        shell: bash
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+        run: |
+          cd TKT
+          git config --global --add safe.directory "$(pwd)"
+          sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
+          yes '' | bash ./install.sh install
+
+      - name: Package kernel files
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/SLACKPKGS"
+          KVER=$(ls /lib/modules | sort -V | tail -n1)
+          arch=$(uname -m)
+          tar --directory=/ \
+            --exclude='./proc' --exclude='./sys' --exclude='./dev' \
+            -cvJf "${GITHUB_WORKSPACE}/SLACKPKGS/Slackware-linux-${arch}-${KVER}-${compiler}-${_cpusched}.txz" \
+            boot/vmlinuz-${KVER} boot/System.map-${KVER} boot/config-${KVER} lib/modules/${KVER}
+
+      - name: Package kernel files
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/SLACKPKGS"
+          KVER=$(ls /lib/modules | sort -V | tail -n1)
+          arch=$(uname -m)
+          tar --directory=/ \
+            --exclude='./proc' --exclude='./sys' --exclude='./dev' \
+            -cvJf "${GITHUB_WORKSPACE}/SLACKPKGS/Slackware-linux-${arch}-${KVER}-${compiler}-${_cpusched}.txz" \
+            boot/vmlinuz-${KVER} boot/System.map-${KVER} boot/config-${KVER} lib/modules/${KVER}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slackware-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: SLACKPKGS/*.txz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Slackware Kernel Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: SLACKPKGS/*.txz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
