@@ -53,8 +53,7 @@ fi
 
 . current_env
 
-if [[ "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
-  # using script is enabled, but we are not within the script sub-command
+if [[ "$_distro" != "Slackware" && "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
   export SCRIPT=1
   msg2 "Using script"
   /usr/bin/script -q -e -c "$0 $@" shell-output.log
@@ -68,7 +67,7 @@ source kconfigs/prepare
 _distro_prompt() {
   echo "Which linux distribution are you running ?"
   echo "if it's not on the list, chose the closest one to it: Fedora/Suse for RPM, Ubuntu/Debian for DEB"
-  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Generic"
+  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Slackware" "Generic"
   _distro="${_selected_value}"
 }
 
@@ -85,6 +84,9 @@ _install_dependencies() {
   elif [ "$_distro" = "Suse" ]; then
     msg2 "Installing dependencies"
     sudo zypper install -y hostname bc bison ccache curl dwarves elfutils flex gcc-c++ git libXi-devel libelf-devel libqt5-qtbase-common-devel libqt5-qtbase-devel lz4 make ncurses-devel openssl-devel patch pesign rpm-build rpmdevtools schedtool python3 rsync zstd ${clang_deps}
+  elif [ "$_distro" = "Slackware" ]; then
+    msg2 "Installing dependencies"
+    sudo slackpkg -batch=on -default_answer=y install bash bc bison binutils brotli clang cpio curl cyrus-sasl dwarves elfutils fakeroot fakeroot-ng file flex gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust gc glibc git guile gzip kernel-headers kmod libedit libelf libxml2 lld llvm lz4 lzop m4 make ncurses nghttp2 nghttp3 openssl patchutils perl python3 python3-pip rsync spirv-llvm-translator sudo tar time wget xxHash xz zstd ${clang_deps} || true
   fi
 }
 
@@ -102,7 +104,7 @@ fi
 
 if [ "$1" = "install" ] || [ "$1" = "config" ]; then
 
-  if [[ -z "$_distro" || ! "$_distro" =~ ^(Ubuntu|Debian|Fedora|Suse|Gentoo|Generic)$ ]]; then
+  if [[ -z "$_distro" || ! "$_distro" =~ ^(Ubuntu|Debian|Fedora|Suse|Gentoo|Slackware|Generic)$ ]]; then
     msg2 "Variable \"_distro\" in \"customization.cfg\" has been set to an unkown value. Prompting..."
     _distro_prompt
   fi
@@ -173,7 +175,7 @@ if [ "$1" = "install" ]; then
     if [ "$_preempt_rt" = "1" ]; then
       _kernel_flavor="${_cpusched}-rt${_compiler_name}"
     else
-      _kernel_flavor="${_cpusched}${_compiler_name}"
+      _kernel_flavor="${_cpusched}-${_compiler_name}"
     fi
   else
     _kernel_flavor="${_kernel_localversion}"
@@ -316,6 +318,60 @@ if [ "$1" = "install" ]; then
 
       msg2 "Install successful"
     fi
+
+  elif [[ "$_distro" == "Slackware" ]]; then
+
+    ./scripts/config --set-str LOCALVERSION "-${_kernel_flavor}"
+
+    if [[ "$_sub" = rc* ]]; then
+      _kernelname=$_basekernel.${_kernel_subver}-${_sub}-$_kernel_flavor
+    else
+      _kernelname=$_basekernel.${_kernel_subver}-$_kernel_flavor
+    fi
+
+    msg2 "Building kernel"
+    make ${llvm_opt} -j ${_thread_num}
+    msg2 "Build successful"
+
+    if [ "$_STRIP" = "true" ]; then
+      echo "Stripping vmlinux..."
+      strip -v $STRIP_STATIC "vmlinux"
+    fi
+
+    PKGROOT="$_where/SLACKPKGS"
+
+    msg2 "Preparing packaging directories..."
+    mkdir -p "$PKGROOT"/{boot,lib/modules,install}
+
+    msg2 "Copying kernel files..."
+    cp arch/x86/boot/bzImage "$PKGROOT/boot/vmlinuz-$_kernelname"
+    cp System.map "$PKGROOT/boot/System.map-$_kernelname"
+    cp .config "$PKGROOT/boot/config-$_kernelname"
+
+    msg2 "Installing modules..."
+    if [ "$_STRIP" = "true" ]; then
+      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP="1" modules_install
+    else
+      make INSTALL_MOD_PATH="$PKGROOT" modules_install
+    fi
+
+    msg2 "Installing headers..."
+    make INSTALL_HDR_PATH="$PKGROOT/usr" headers_install
+
+    msg2 "Creating slack-desc..."
+    cat <<EOF > "$PKGROOT/install/slack-desc"
+kernel-generic: Slackware TKT Kernel
+kernel-generic:
+kernel-generic: This is a generic kernel built from kernel.org sources.
+kernel-generic: Packaged by TKT kernel toolkit.
+kernel-generic:
+EOF
+
+    msg2 "Packaging .txz archive..."
+    cd "$PKGROOT"
+    tar -cf - {boot,lib,install} | xz -9e > "kernel-$_kernelname-tkt-x86_64-1.txz" || true
+
+    msg2 "Package created: kernel-$_kernelname-tkt-x86_64-1.txz"
 
   elif [[ "$_distro" =~ ^(Gentoo|Generic)$ ]]; then
 
