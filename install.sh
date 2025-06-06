@@ -74,17 +74,17 @@ _distro_prompt() {
 
 _install_dependencies() {
   if [ "$_compiler_name" = "llvm" ]; then
-    clang_deps="llvm clang lld"
+    clang_deps="clang lld llvm"
   fi
   if [ "$_distro" = "Debian" -o "$_distro" = "Ubuntu" ]; then
     msg2 "Installing dependencies"
-    sudo apt install bc bison build-essential ccache cpio curl fakeroot flex git kmod libelf-dev libncurses-dev libssl-dev lz4 qtbase5-dev rsync schedtool wget zstd debhelper ${clang_deps} -y
+    sudo apt install -y bc binutils binutils-dev binutils-gold bison build-essential ccache cmake cpio curl debhelper device-tree-compiler dpkg-dev dwarves fakeroot flex g++ g++-multilib gcc gcc-multilib git gnupg kmod libc6-dev libc6-dev-i386 libdw-dev libelf-dev liblz4-tool libncurses-dev libnuma-dev libperl-dev libssl-dev libstdc++-14-dev libudev-dev lz4 make ninja-build patchutils python3 python3-pip python3-setuptools qtbase5-dev rsync schedtool software-properties-common wget zstd ${clang_deps}
   elif [ "$_distro" = "Fedora" ]; then
     msg2 "Installing dependencies"
-    sudo dnf install openssl-devel-engine hostname perl bison ccache curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ git libXi-devel lz4 make ncurses-devel openssl openssl-devel perl-devel perl-generators pesign python3-devel qt5-qtbase-devel rpm-build rpmdevtools schedtool zstd bc rsync -y ${clang_deps} -y
+    sudo dnf install -y bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel perl-generators pesign python3-devel python3-pip qt5-qtbase-devel rpm-build rpmdevtools rsync schedtool wget xz zstd
   elif [ "$_distro" = "Suse" ]; then
     msg2 "Installing dependencies"
-    sudo zypper install -y hostname bc bison ccache curl dwarves elfutils flex gcc-c++ git libXi-devel libelf-devel libqt5-qtbase-common-devel libqt5-qtbase-devel lz4 make ncurses-devel openssl-devel patch pesign rpm-build rpmdevtools schedtool python3 rsync zstd ${clang_deps}
+    sudo zypper install -y bc binutils bison ccache curl dwarves elfutils flex gcc-c++ git hostname libQt5-qtbase-common-devel libQt5-qtbase-devel libXi-devel libelf-devel libnuma-devel libopenssl-devel libudev-devel lz4 make ncurses-devel openssl-devel patch pesign python3 rpm-build rpmdevtools rsync schedtool zstd ${clang_deps}
   fi
 }
 
