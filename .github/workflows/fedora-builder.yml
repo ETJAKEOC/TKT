@@ -33,11 +33,11 @@ jobs:
     steps:
       - name: Install dependencies and cleanup
         run: |
-          dnf install --assumeyes \
-            git gawk clang llvm lld wget xz hostname perl bison curl \
-            dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ \
-            libXi-devel lz4 make ncurses-devel openssl perl-devel perl-generators pesign \
-            python3-devel rpm-build rpmdevtools schedtool zstd bc rsync
+          dnf install --assumeyes  --skip-unavailable \
+            bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager \
+            fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 \
+            make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel \
+            perl-generators pesign python3-devel python3-pip qt5-qtbase-devel rpm-build rpmdevtools rsync schedtool wget xz zstd
           rm -rf /var/cache/dnf/*
 
       - name: Checkout TKT
@@ -50,7 +50,7 @@ jobs:
         run: |
           git config --global --add safe.directory `pwd`
           if [ "${{ inputs.compiler }}" = "llvm" ] || [ "${{ inputs.compiler }}" = "clang" ]; then
-            export KCFLAGS="$KCFLAGS -Wno-error=unused-command-line-argument"
+            export KCFLAGS="$KCFLAGS -Wold-style-declaration"
           fi
           sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
           set +o pipefail

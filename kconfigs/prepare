@@ -396,7 +396,7 @@ _set_compiler(){
 
   if [ "$_compiler" = "llvm" ]; then
     _compiler_name="-llvm"
-    llvm_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=${_llvm_ias:-0}"
+    compiler_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=${_llvm_ias:-0}"
 
     if [ $_kver -ge 512 ]; then
         # LTO Selection
@@ -415,7 +415,7 @@ _set_compiler(){
         _lto_mode="${_lto_mode_array[$_selected_index]}"
       fi
         if [ "$_lto_mode" != "no" ]; then
-                llvm_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1"
+                compiler_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1"
         fi
 
         # PGO Selection
@@ -458,11 +458,11 @@ _set_compiler(){
         fi
     fi
   else # GCC
-    _compiler_name=""
-    llvm_opt=""
+    _compiler_name="gcc"
+    compiler_opt="CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip"
   fi
 
-  echo -e "_compiler_name='$_compiler_name'\nllvm_opt='$llvm_opt'" >> "$_where"/BIG_UGLY_FROGMINER
+  echo -e "_compiler_name='$_compiler_name'\ncompiler_opt='$compiler_opt'" >> "$_where"/BIG_UGLY_FROGMINER
 }
 
 _define_kernel_abs_paths() {
@@ -1724,7 +1724,7 @@ fi
     sed -i '2iexit 0' scripts/depmod.sh
 
     # get kernel version
-    #make prepare ${llvm_opt}
+    #make prepare ${compiler_opt}
   fi
 
   # modprobed-db
@@ -1753,7 +1753,7 @@ fi
       exit 1
     fi
 
-    yes "" | make LSMOD=$_modprobeddb_db_path localmodconfig ${llvm_opt}
+    yes "" | make LSMOD=$_modprobeddb_db_path localmodconfig ${compiler_opt}
   fi
 
   if [ true = "$_config_fragments" ]; then
@@ -1787,7 +1787,7 @@ fi
 
   # rewrite configuration
   msg2 "Setting config"
-  make ${_config_updating} ${llvm_opt} |& tee -a "$_where"/logs/prepare.log.txt
+  make ${_config_updating} ${compiler_opt} |& tee -a "$_where"/logs/prepare.log.txt
 
   # Modify the kernel config file to fit Fedora SELinux configuration
   if [ "$_distro" = "Fedora" ] ; then
@@ -1811,13 +1811,13 @@ fi
   fi
   if [ 1 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make menuconfig ${llvm_opt}
+    make menuconfig ${compiler_opt}
   elif [ 2 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make nconfig ${llvm_opt}
+    make nconfig ${compiler_opt}
   elif [ 3 = "$_menunconfig" ]; then
     cp .config .config.orig
-    make xconfig ${llvm_opt}
+    make xconfig ${compiler_opt}
   fi
   if [ 1 = "$_menunconfig" ] || [ 2 = "$_menunconfig" ] || [ 3 = "$_menunconfig" ]; then
     if [ -z "${_diffconfig}" ]; then
