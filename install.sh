@@ -54,11 +54,9 @@ fi
 . current_env
 
 if [[ "$_logging_use_script" =~ ^(Y|y|Yes|yes)$ && -z "$SCRIPT" ]]; then
-  # using script is enabled, but we are not within the script sub-command
   export SCRIPT=1
-  msg2 "Using script"
-  /usr/bin/script -q -e -c "$0 $@" shell-output.log
-  exit
+  msg2 "Using script logging"
+  exec script -q -e -c "env SCRIPT=1 \"$0\" \"$@\"" shell-output.log
 fi
 
 source kconfigs/prepare
@@ -68,7 +66,7 @@ source kconfigs/prepare
 _distro_prompt() {
   echo "Which linux distribution are you running ?"
   echo "if it's not on the list, chose the closest one to it: Fedora/Suse for RPM, Ubuntu/Debian for DEB"
-  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Generic"
+  _prompt_from_array "Debian" "Fedora" "Suse" "Ubuntu" "Gentoo" "Slackware" "Generic"
   _distro="${_selected_value}"
 }
 
@@ -78,13 +76,20 @@ _install_dependencies() {
   fi
   if [ "$_distro" = "Debian" -o "$_distro" = "Ubuntu" ]; then
     msg2 "Installing dependencies"
+    sudo apt update
     sudo apt install -y bc binutils binutils-dev binutils-gold bison build-essential ccache cmake cpio curl debhelper device-tree-compiler dpkg-dev dwarves fakeroot flex g++ g++-multilib gcc gcc-multilib git gnupg kmod libc6-dev libc6-dev-i386 libdw-dev libelf-dev liblz4-tool libncurses-dev libnuma-dev libperl-dev libssl-dev libstdc++-14-dev libudev-dev lz4 make ninja-build patchutils python3 python3-pip python3-setuptools qtbase5-dev rsync schedtool software-properties-common wget zstd ${clang_deps}
   elif [ "$_distro" = "Fedora" ]; then
     msg2 "Installing dependencies"
-    sudo dnf install -y bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel perl-generators pesign python3-devel python3-pip qt5-qtbase-devel rpm-build rpmdevtools rsync schedtool wget xz zstd
+    sudo dnf update -y
+    sudo dnf install -y --skip-unavailable bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel perl-generators pesign python3-devel python3-pip qt5-qtbase-devel rpm-build rpmdevtools rsync schedtool wget xz zstd ${clang_deps}
   elif [ "$_distro" = "Suse" ]; then
     msg2 "Installing dependencies"
+    sudo zypper update
     sudo zypper install -y bc binutils bison ccache curl dwarves elfutils flex gcc-c++ git hostname libQt5-qtbase-common-devel libQt5-qtbase-devel libXi-devel libelf-devel libnuma-devel libopenssl-devel libudev-devel lz4 make ncurses-devel openssl-devel patch pesign python3 rpm-build rpmdevtools rsync schedtool zstd ${clang_deps}
+  elif [ "$_distro" = "Slackware" ]; then
+    msg2 "Installing dependencies"
+    sudo slackpkg update
+    sudo slackpkg install --yes git gcc make bc flex bison ncurses ncurses-devel bash perl wget curl cpio rsync patchutils lz4 lzop xz python3 python3-pip dwarves elfutils libelf openssl sudo fakeroot fakeroot-ng time file ${clang_deps}
   fi
 }
 

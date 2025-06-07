@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Install dependencies and cleanup
         run: |
-          dnf install --assumeyes \
+          dnf install --assumeyes  --skip-unavailable \
             bc bison ccache clang curl dwarves elfutils-devel elfutils-libelf-devel fedora-packager \
             fedpkg flex gcc-c++ gawk git hostname libXi-devel libudev-devel libuuid-devel lld llvm lz4 \
             make ncurses-devel numactl-dev openssl openssl-devel openssl-devel-engine patchutils perl perl-devel \

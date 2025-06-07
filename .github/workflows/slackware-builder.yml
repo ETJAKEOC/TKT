@@ -1,0 +1,92 @@
+name: Build Slackware kernel
+
+on:
+  workflow_call:
+    inputs:
+      _cpusched:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+
+env:
+  _processor_opt: "x86-64"
+  _distro: "Slackware"
+  _git_mirror: "gregkh"
+  _debugdisable: "true"
+  _noccache: "true"
+  _STRIP: "true"
+  _kernel_on_diet: "true"
+  _nofallback: "false"
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    container: andy5995/slackware-build-essential:15.0
+    env:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Change default mirror
+        run: |
+          echo "https://mirrors.ocf.berkeley.edu/slackware/slackware64-15.0/" > /etc/slackpkg/mirrors
+          echo "y" | slackpkg update gpg
+
+      - name: Install dependencies
+        run: |
+          slackpkg update
+          slackpkg install --yes git gcc make bc flex bison ncurses ncurses-devel bash \
+            perl wget curl cpio rsync patchutils lz4 lzop xz python3 python3-pip dwarves \
+            elfutils libelf openssl sudo fakeroot fakeroot-ng time file
+
+      - name: Checkout TKT
+        uses: actions/checkout@v4
+        with:
+          path: TKT
+
+      - name: Adjust compiler and compile Kernel
+        shell: bash
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+        run: |
+          cd TKT
+          git config --global --add safe.directory `pwd`
+          sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
+          yes '' | bash ./install.sh install
+
+      - name: Package kernel files
+        run: |
+          mkdir -p SLACKPKGS
+          KVER=$(ls /lib/modules | sort -V | tail -n1)
+          arch=$(uname -m)
+          cd /
+          tar --exclude='./proc' --exclude='./sys' --exclude='./dev' \
+              -cvJf SLACKPKGS/Slackware-linux-${arch}-${KVER}.txz \
+              boot/vmlinuz* boot/System.map* boot/config* lib/modules/${KVER}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slackware-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: SLACKPKGS/*.txz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Slackware Kernel Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: SLACKPKGS/*.txz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
