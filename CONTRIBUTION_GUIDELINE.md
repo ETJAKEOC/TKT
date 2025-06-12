@@ -46,6 +46,20 @@ modprobed-db dump > my-modules.txt
 
 Then send me the my-modules.txt file via a pull request. Add system details if you can (laptop/desktop, CPU/GPU, distro)—that context helps!
 
+## Goals
+
+Below is a checklist of platform-specific compile goals for this project. These represent both completed and planned features, and will help contributors and users see where the project is headed.
+```
+- [x] **Slackware:** Complete build and patch set.
+- [ ] **Ubuntu/Mint:** Split out compile process with appropriate Ubuntu/Mint-specific patches.
+- [ ] **Debian:** Dedicated compile path with Debian-specific patches.
+- [ ] **Pop!_OS:** Build workflow with Pop!_OS-specific patches.
+- [ ] **Gentoo (OpenRC):** Gentoo OpenRC-specific compile.
+- [ ] **Gentoo (SystemD):** Gentoo SystemD-specific compile.
+- [ ] **OpenSUSE:** Dedicated OpenSUSE compile process.
+```
+> **Note:** All of these are intended to be GHCI builds where possible.
+
 
 If you are interested in contributing to this project, please, feel free to fork it, and do some work.
 
