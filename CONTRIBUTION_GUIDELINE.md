@@ -17,9 +17,19 @@ removing support for CAN bus and HAM radio hardware for desktop PC kernels, this
 The main contribution to this project is to simply run it. If you can run this kernel on more hardware
 this will help us to debug any issues that may arise from our tunings, and we can address them.
 
-## Contribute Your Kernel Module Data (via modprobed-db)
+## Contribute Your Kernel Module Data
 
 Help make this project smarter for everyone by contributing your system’s module usage! We're building a generic module list that covers the most common real-world hardware—your input matters.
+
+## Contribute Your Kernel Module Data (via lsmod - the preferred method)
+
+Open a terminal shell and run the following command to export your loaded modules into a file that you can submit to me.
+
+```bash
+lsmod | awk 'NR>1 {print $1}' | sort -u > ~/TKT-modules-list.txt
+```
+
+## Contribute Your Kernel Module Data (via modprobed-db)
 
 ### Step 1: Install modprobed-db
 
@@ -38,6 +48,7 @@ Enable the systemd service to run on every boot:
 sudo systemctl enable --now modprobed-db.service
 
 Let it run for a few days or just during your regular use—boot into different environments, use hardware, peripherals, Wi-Fi, audio, USB, etc. The goal is to build a rich database of your system's actual module usage.
+
 ### Step 3: Send Me Your Data
 
 Once you've built up some history:
