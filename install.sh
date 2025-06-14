@@ -175,7 +175,7 @@ if [ "$1" = "install" ]; then
     if [ "$_preempt_rt" = "1" ]; then
       _kernel_flavor="${_cpusched}-rt${_compiler_name}"
     else
-      _kernel_flavor="${_cpusched}-${_compiler_name}"
+      _kernel_flavor="${_cpusched}${_compiler_name}"
     fi
   else
     _kernel_flavor="${_kernel_localversion}"
@@ -330,48 +330,127 @@ if [ "$1" = "install" ]; then
     fi
 
     msg2 "Building kernel"
-    make ${llvm_opt} -j ${_thread_num}
+    make ${llvm_opt} -j ${_thread_num} || { echo "Kernel build failed"; exit 1; }
     msg2 "Build successful"
 
     if [ "$_STRIP" = "true" ]; then
       echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux"
+      strip -v $STRIP_STATIC "vmlinux" || echo "strip failed"
     fi
 
     PKGROOT="$_where/SLACKPKGS"
 
     msg2 "Preparing packaging directories..."
-    mkdir -p "$PKGROOT"/{boot,lib/modules,install}
+    mkdir -p "$PKGROOT/boot"
+    mkdir -p "$PKGROOT/lib/modules"
+    mkdir -p "$PKGROOT/install"
+    headers_dest="$PKGROOT/usr/src/linux-$_kernelname"
+    mkdir -p "$headers_dest/arch/x86"
 
     msg2 "Copying kernel files..."
-    cp arch/x86/boot/bzImage "$PKGROOT/boot/vmlinuz-$_kernelname"
-    cp System.map "$PKGROOT/boot/System.map-$_kernelname"
-    cp .config "$PKGROOT/boot/config-$_kernelname"
+    cp -a arch/x86/boot/bzImage "$PKGROOT/boot/vmlinuz-$_kernelname"
+    cp -a System.map "$PKGROOT/boot/System.map-$_kernelname"
+    cp -a .config "$PKGROOT/boot/config-$_kernelname"
+    mv  $_where/linux-src-git/. $headers_dest
 
     msg2 "Installing modules..."
     if [ "$_STRIP" = "true" ]; then
-      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP="1" modules_install
+      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP=1 modules_install
     else
       make INSTALL_MOD_PATH="$PKGROOT" modules_install
     fi
 
+    # Fix up module metadata (some tools depend on this)
+    msg2 "Running depmod on packaged modules..."
+    sudo depmod -b "$PKGROOT" "$_kernelname"
+
     msg2 "Installing headers..."
-    make INSTALL_HDR_PATH="$PKGROOT/usr" headers_install
+    cp -a include "$headers_dest/"
+    cp -a arch/x86/include "$headers_dest/arch/x86/"
+    cp Makefile Kconfig .config "$headers_dest/"
+    cp -a scripts "$headers_dest/"
+
+    # Symlink for dkms/build expectations
+    ln -sf "/usr/src/linux-$_kernelname" "$PKGROOT/lib/modules/$_kernelname/build"
+    ln -sf "/usr/src/linux-$_kernelname" "$PKGROOT/lib/modules/$_kernelname/source"
+
+    # Cleanup headers junk files
+    find "$headers_dest" -type f \( \
+      -name '*.o' -o \
+      -name '*.a' -o \
+      -name '*.ko' -o \
+      -name '*.cmd' -o \
+      -name '*.mod.c' -o \
+      -name '*.tmp' -o \
+      -name '.*.cmd' -o \
+      -name '*.order' -o \
+      -name '*.symvers' -o \
+      -name '*.mod' -o \
+      -name 'vmlinux*' \) -delete
+
+    rm -rf "$headers_dest"/{.git,.tmp_versions,modules.order,Module.symvers,build,source}
 
     msg2 "Creating slack-desc..."
     cat <<EOF > "$PKGROOT/install/slack-desc"
-kernel-generic: Slackware TKT Kernel
-kernel-generic:
-kernel-generic: This is a generic kernel built from kernel.org sources.
-kernel-generic: Packaged by TKT kernel toolkit.
-kernel-generic:
+kernel-${_kernel_flavor}: Slackware TKT Kernel
+kernel-${_kernel_flavor}:
+kernel-${_kernel_flavor}: This is a generic kernel built from kernel.org sources.
+kernel-${_kernel_flavor}: Packaged by TKT kernel toolkit.
+kernel-${_kernel_flavor}:
 EOF
 
-    msg2 "Packaging .txz archive..."
-    cd "$PKGROOT"
-    tar -cf - {boot,lib,install} | xz -9e > "kernel-$_kernelname-tkt-x86_64-1.txz" || true
+    # Detect root device
+    _rootdev=$(findmnt -n -o SOURCE /)
 
-    msg2 "Package created: kernel-$_kernelname-tkt-x86_64-1.txz"
+    msg2 "Creating doinst.sh..."
+    cat <<EOF > "$PKGROOT/install/doinst.sh"
+#!/bin/sh
+
+# Auto-generate initrd
+KERNEL_VERSION="$_kernelname"
+MKINITRD_CONF="/etc/mkinitrd.conf"
+INITRD="/boot/initrd-\$KERNEL_VERSION.gz"
+
+if [ -f "\$MKINITRD_CONF" ]; then
+  echo "Generating initrd..."
+  mkinitrd -F -k \$KERNEL_VERSION -c \$MKINITRD_CONF -o \$INITRD
+else
+  echo "Generating default initrd..."
+  mkinitrd -c -k \$KERNEL_VERSION -m ext4 -o \$INITRD
+fi
+
+# Add lilo entry if using lilo
+if [ -x /sbin/lilo ]; then
+  if grep -q "vmlinuz-\$KERNEL_VERSION" /etc/lilo.conf; then
+    echo "lilo.conf already contains vmlinuz-\$KERNEL_VERSION"
+  else
+    echo "Appending new entry to /etc/lilo.conf..."
+    cat <<LILOBLOCK >> /etc/lilo.conf
+
+image = /boot/vmlinuz-\$KERNEL_VERSION
+  initrd = /boot/initrd-\$KERNEL_VERSION.gz
+  root = ${_rootdev}
+  label = ${_kernel_flavor}
+  read-only
+
+LILOBLOCK
+  fi
+
+  echo "Running lilo..."
+  lilo
+fi
+EOF
+
+    sudo chmod 755 "$PKGROOT/install/doinst.sh"
+
+    msg2 "Packaging .txz archive..."
+    cd "$PKGROOT" || exit 1
+    find . -type d -exec sudo chmod 755 {} +
+    find . -type f -exec sudo chmod 644 {} +
+    sudo chmod 755 ./boot/vmlinuz-$_kernelname
+    tar --numeric-owner -cf - boot lib usr install | xz -9e > "Slackware-kernel-$_kernelname-TKT-x86_64-1.txz"
+
+    msg2 "Slackware package created."
 
   elif [[ "$_distro" =~ ^(Gentoo|Generic)$ ]]; then
 

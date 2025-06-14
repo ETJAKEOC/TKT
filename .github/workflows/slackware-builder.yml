@@ -42,7 +42,7 @@ jobs:
           echo "YES" | slackpkg update gpg
           wget --no-check-certificate -O /etc/ssl/certs/ca-certificates.crt https://curl.se/ca/cacert.pem
 
-      - name: Install dependencies
+      - name: Install dependencies and clean-up
         run: |
           yes | slackpkg -batch=on -default_answer=y install bash bc bison binutils brotli clang cpio curl cyrus-sasl dwarves elfutils fakeroot fakeroot-ng file flex gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust gc glibc git guile gzip kernel-headers kmod libedit libelf libxml2 lld llvm lz4 lzop m4 make ncurses nghttp2 nghttp3 openssl patchutils perl python3 python3-pip rsync spirv-llvm-translator sudo tar time wget xxHash xz zstd
 

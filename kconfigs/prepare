@@ -458,7 +458,7 @@ _set_compiler(){
         fi
     fi
   else # GCC
-    _compiler_name="gcc"
+    _compiler_name="-gcc"
     compiler_opt="CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip"
   fi
 
