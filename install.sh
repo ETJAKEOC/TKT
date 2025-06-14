@@ -330,18 +330,18 @@ if [ "$1" = "install" ]; then
     fi
 
     msg2 "Building kernel"
-    make ${llvm_opt} -j ${_thread_num}
+    make ${llvm_opt} -j ${_thread_num} || { echo "Kernel build failed"; exit 1; }
     msg2 "Build successful"
 
     if [ "$_STRIP" = "true" ]; then
       echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux"
+      strip -v $STRIP_STATIC "vmlinux" || echo "strip failed"
     fi
 
     PKGROOT="$_where/SLACKPKGS"
 
     msg2 "Preparing packaging directories..."
-    mkdir -p "$PKGROOT"/{boot,lib/modules,install}
+    mkdir -p "$PKGROOT"/{boot,lib/modules,usr/src,install}
 
     msg2 "Copying kernel files..."
     cp arch/x86/boot/bzImage "$PKGROOT/boot/vmlinuz-$_kernelname"
@@ -350,13 +350,31 @@ if [ "$1" = "install" ]; then
 
     msg2 "Installing modules..."
     if [ "$_STRIP" = "true" ]; then
-      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP="1" modules_install
+      make INSTALL_MOD_PATH="$PKGROOT" INSTALL_MOD_STRIP=1 modules_install
     else
       make INSTALL_MOD_PATH="$PKGROOT" modules_install
     fi
 
+    # Fix up module metadata (some tools depend on this)
+    msg2 "Running depmod on packaged modules..."
+    depmod -b "$PKGROOT" "$_kernelname"
+
     msg2 "Installing headers..."
-    make INSTALL_HDR_PATH="$PKGROOT/usr" headers_install
+    headers_dest="$PKGROOT/usr/src/linux-$_kernelname"
+    mkdir -p "$headers_dest"
+    cp -a include "$headers_dest/"
+    cp -a arch/x86/include "$headers_dest/arch/x86/"
+    cp Makefile Kconfig .config "$headers_dest/"
+    cp -a scripts "$headers_dest/"
+
+    # Clean leftover build artifacts
+    find "$headers_dest" -name '*.o' -delete
+    find "$headers_dest" -name '*.cmd' -delete
+    find "$headers_dest" -name '*.mod.c' -delete
+    rm -rf "$headers_dest"/{.git,.tmp_versions,*.order,*.symvers,*.mod,Module.symvers,modules.order}
+
+    # Symlink for dkms/build expectations
+    ln -sf "/usr/src/linux-$_kernelname" "$PKGROOT/lib/modules/$_kernelname/build"
 
     msg2 "Creating slack-desc..."
     cat <<EOF > "$PKGROOT/install/slack-desc"
@@ -368,10 +386,11 @@ kernel-generic:
 EOF
 
     msg2 "Packaging .txz archive..."
-    cd "$PKGROOT"
-    tar -cf - {boot,lib,install} | xz -9e > "kernel-$_kernelname-tkt-x86_64-1.txz" || true
+    cd "$PKGROOT" || exit 1
+    tar -cf - boot lib usr install | xz -9e > "Slackware-kernel-$_kernelname-TKT-x86_64-1.txz"
 
-    msg2 "Package created: kernel-$_kernelname-tkt-x86_64-1.txz"
+    msg2 "Package created: Slackware-kernel-$_kernelname-TKT-x86_64-1.txz"
+  fi
 
   elif [[ "$_distro" =~ ^(Gentoo|Generic)$ ]]; then
 
