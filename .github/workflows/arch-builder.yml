@@ -34,6 +34,10 @@ jobs:
           pacman -Sy --noconfirm reflector rsync curl wget aria2
           reflector --fastest 10 --verbose --country US --protocol rsync,https,http \
             --latest 10 --age 1 --sort rate --save /etc/pacman.d/mirrorlist
+          if ! grep -q '^Server' /etc/pacman.d/mirrorlist; then
+            echo 'Fallback: using default mirror'
+            echo 'Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+          fi
 
       - name: Install dependencies and cleanup
         run: |
