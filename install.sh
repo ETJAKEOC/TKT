@@ -356,7 +356,7 @@ if [ "$1" = "install" ]; then
     fi
 
     msg2 "Installing headers..."
-    make INSTALL_HDR_PATH="$PKGROOT/usr" headers_install
+    make INSTALL_HDR_PATH="$PKGROOT/lib/modules/$_kernelname/build" headers_install
 
     msg2 "Creating slack-desc..."
     cat <<EOF > "$PKGROOT/install/slack-desc"
@@ -369,7 +369,7 @@ EOF
 
     msg2 "Packaging .txz archive..."
     cd "$PKGROOT"
-    tar -cf - {boot,lib,install} | xz -9e > "kernel-$_kernelname-tkt-x86_64-1.txz" || true
+    tar -cf - {boot,lib,install} | xz -9e > "Slackware-kernel-$_kernelname-TKT-x86_64-1.txz" || true
 
     msg2 "Package created: kernel-$_kernelname-tkt-x86_64-1.txz"
 
