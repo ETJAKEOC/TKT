@@ -57,9 +57,6 @@ jobs:
           yes '' | ./install.sh install || true
           set -o pipefail
 
-      - name: Cleanup useless RPM files
-        run: rm -rf RPMS/*kernel-headers*.rpm
-
       - name: Rename RPM files to $arch-linux format
         run: |
           arch=$(uname -m)
