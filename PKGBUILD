@@ -55,6 +55,8 @@ license=('GPL2')
 makedepends=('bison' 'xmlto' 'docbook-xsl' 'inetutils' 'bc' 'libelf' 'pahole' 'patchutils' 'flex' 'python-sphinx' 'python-sphinx_rtd_theme' 'graphviz' 'imagemagick' 'git' 'cpio' 'perl' 'tar' 'xz' 'wget')
 if [ "$_compiler_name" = "-llvm" ]; then
   makedepends+=( 'lld' 'clang' 'llvm')
+else
+  _compiler_name="-gcc"
 fi
 optdepends=('schedtool')
 options=('!strip')
