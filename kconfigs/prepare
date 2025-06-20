@@ -6,8 +6,7 @@ _current_kernels=("6.16" "6.15" "6.12" "6.6" "6.1")
 # List of kernels that are no longer maintained either upstream or locally
 _eol_kernels=("6.14" "6.13" "6.11" "6.10" "6.9" "6.8" "6.7" "6.5" "6.4" "6.3" "6.2" "6.0")
 
-typeset -Ag _all_scheds
-_all_scheds=(
+typeset -Ag _all_scheds=(
   ["pds"]="Project C's Priority and Deadline based Skiplist multiple queue scheduler (PDS)"
   ["bmq"]="Project C's BitMap Queue Scheduler (BMQ)"
   ["eevdf"]="Earliest Eligible Virtual Deadline First scheduler (EEVDF). Linux kernel's default for ≥ 6.6"
@@ -18,8 +17,7 @@ _all_scheds=(
   ["bore-eevdf"]="Burst-Oriented Response Enhancer Scheduler (BORE, EEVDF variant)"
 )
 
-typeset -Ag _cpu_marchs
-_cpu_marchs=(
+typeset -Ag _cpu_marchs=(
   ["x86-64"]="Baseline for any X86 CPU (default)"
   ["x86-64-v2"]="Baseline for X86 CPUs newer than ~2008 (see https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)"
   ["x86-64-v3"]="Baseline for X86 CPUS newer than ~2013 (see link above)"
@@ -42,8 +40,7 @@ _cpu_marchs=(
   ["skylake"]="Intel Desktop Core 6th to 9th gen"
 )
 
-typeset -Ag _kernel_git_remotes
-_kernel_git_remotes=(
+typeset -Ag _kernel_git_remotes=(
   ["kernel.org"]="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
   ["googlesource.com"]="https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable"
   ["gregkh"]="https://github.com/gregkh/linux.git"

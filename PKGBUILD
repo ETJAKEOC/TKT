@@ -84,6 +84,7 @@ prepare() {
 
 build() {
   source "$_where"/TKT_CONFIG
+  source "$_where"/kconfigs/prepare
 
   cd "$_kernel_work_folder_abs"
 
@@ -116,24 +117,110 @@ build() {
   CFLAGS+=" ${_compileropt}"
 
   # build!
-  if pacman -Qq schedtool &> /dev/null; then
+
+  # Approved list of CPU arch targets
+  if [[ -v "_cpu_marchs[$_processor_opt]" ]]; then
+    if [[ "$_processor_opt" == "native" ]]; then
+      _march_flag="-march=native"
+    else
+      _march_flag="-march=${_processor_opt}"
+    fi
+  else
+    msg2 "Invalid or unset CPU arch '${_processor_opt}'; falling back to 'x86-64'"
+    _march_flag="-march=x86-64"
+  fi
+
+  # Normalize compiler
+  [[ "$_compiler" == "clang" ]] && _compiler="llvm"
+
+  # Validate and sanitize _processor_opt
+  if [[ " ${_valid_cpu_opts[*]} " =~ " ${_processor_opt} " ]]; then
+    case "$_processor_opt" in
+      native_amd|native_intel)
+        _march_flag="-march=native"
+        ;;
+      x86-64)
+        _march_flag="-march=x86-64"
+        ;;
+      *)
+        _march_flag="-march=${_processor_opt}"
+        ;;
+    esac
+  else
+    msg2 "Invalid or unset CPU arch; falling back to 'x86-64'"
+    _march_flag="-march=x86-64"
+  fi
+
+  # Check for schedtool + ionice (optional perf tuning)
+  if pacman -Qq schedtool &>/dev/null; then
     msg2 "Using schedtool"
     _schedtool="command schedtool -B -n 1"
     _ionice="command ionice -n 1"
   fi
+
   _runtime=$(
     if [ -n "$_schedtool" ]; then
       _pid="$(exec bash -c 'echo "$PPID"')"
-      $_schedtool "$_pid" ||:
-      $_ionice -p "$_pid" ||:
+      $_schedtool "$_pid" || :
+      $_ionice -p "$_pid" || :
     fi
-
-    export KCPPFLAGS
-    export KCFLAGS
-
-    time ( make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1 ) 3>&1 1>&2 2>&3
-    return 0
   )
+
+  # === LLVM TOOLCHAIN CONFIG ===
+  if [[ "$_compiler" == "llvm" ]]; then
+    export CC=clang
+    export CXX=clang++
+    export CPP=clang-cpp
+    export LD=ld.lld
+    export AR=llvm-ar
+    export NM=llvm-nm
+    export STRIP=llvm-strip
+    export OBJCOPY=llvm-objcopy
+    export OBJDUMP=llvm-objdump
+    export RANLIB=llvm-ranlib
+    export READELF=llvm-readelf
+    export AS=llvm-as
+    export CFLAGS+="${_march_flag} -pipe -fomit-frame-pointer"
+    export CXXFLAGS="${CFLAGS} -stdlib=libc++"
+    export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+    export LDFLAGS="-fuse-ld=lld -Wl,--as-needed"
+    export KCPPFLAGS="${CPPFLAGS}"
+
+  # === GCC TOOLCHAIN CONFIG ===
+  elif [[ "$_compiler" == "gcc" ]]; then
+    export CC=gcc
+    export CXX=g++
+    export CPP=cpp
+    export LD=ld
+    export AR=ar
+    export NM=nm
+    export STRIP=strip
+    export OBJCOPY=objcopy
+    export OBJDUMP=objdump
+    export RANLIB=ranlib
+    export READELF=readelf
+    export AS=as
+    export CFLAGS+="${_march_flag} -pipe -fomit-frame-pointer"
+    export CXXFLAGS="${CFLAGS}"
+    export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+    export LDFLAGS="-Wl,--as-needed"
+    export KCPPFLAGS="${CPPFLAGS}"
+  fi
+
+  # === BUILD EXECUTION ===
+  if [[ "$_compiler" == "llvm" ]]; then
+    time (
+      make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1
+    ) 3>&1 1>&2 2>&3
+  elif [[ "$_compiler" == "gcc" ]]; then
+    time (
+      make ${_force_all_threads} LOCALVERSION= bzImage modules 2>&1
+    ) 3>&1 1>&2 2>&3
+  else
+    msg2 "❌ Unknown compiler: $_compiler"
+    return 1
+  fi
+  return 0
 }
 
 hackbase() {
