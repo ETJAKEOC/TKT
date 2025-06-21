@@ -116,118 +116,31 @@ build() {
   CFLAGS+=" ${_compileropt}"
 
   # build!
-
-  # Check for schedtool + ionice (optional perf tuning)
-  if pacman -Qq schedtool &>/dev/null; then
+  if pacman -Qq schedtool &> /dev/null; then
     msg2 "Using schedtool"
     _schedtool="command schedtool -B -n 1"
     _ionice="command ionice -n 1"
   fi
-
   _runtime=$(
     if [ -n "$_schedtool" ]; then
       _pid="$(exec bash -c 'echo "$PPID"')"
       $_schedtool "$_pid" ||:
       $_ionice -p "$_pid" ||:
     fi
+
+    export KCPPFLAGS
+    export KCFLAGS
+
+  # Setup "llvm_opts" if compiling using clang
+  if [ "$_compiler_name" = "-llvm" ]; then
+    time (CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1 \
+    make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1 ) 3>&1 1>&2 2>&3
+  elif [ "$_compiler_name" = "-gcc" ]; then
+    time (CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip \
+    make ${_force_all_threads} LOCALVERSION= bzImage modules 2>&1 ) 3>&1 1>&2 2>&3
+  fi
+    return 0
   )
-
-  # Approved list of CPU arch targets
-  typeset -Ag _cpu_marchs=(
-    ["x86-64"]="Baseline for any X86 CPU (default)"
-    ["x86-64-v2"]="Baseline for X86 CPUs newer than ~2008 (see https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)"
-    ["x86-64-v3"]="Baseline for X86 CPUS newer than ~2013 (see link above)"
-    ["x86-64-v4"]="Baseline for Intel Skylake or newer, AMD zen4 or newer (see link above)"
-    ["native"]="Automatically tune for the current CPU"
-    ["znver5"]="AMD Ryzen 9000 | Mobile Ryzen AI (MAX) 300 | EPYC 9005"
-    ["znver4"]="AMD Ryzen 8000/7000 | Mobile Ryzen 200 | Threadripper 7000WX | EPYC 9004/8004/4004"
-    ["znver3"]="AMD Ryzen 6000/5000 | Mobile Ryzen 7030/5000 | Threadripper 5000WX | EPYC 7003"
-    ["znver2"]="AMD Ryzen 4000/3000 | Mobile Ryzen 5[3,5,7]00U | Threadripper 3000WX | EPYC 7002"
-    ["znver1"]="AMD Ryzen 1000/2000 | Athlon 200/300/3000 | Threadripper 1000 | EPYC 7001"
-    ["arrowlake-s"]="Intel Desktop Core Ultra 200"
-    ["arrowlake"]="Intel Laptop Core Ultra 200"
-    ["lunarlake"]="Intel Laptop Core Ultra 200V"
-    ["meteorlake"]="Intel Laptop Core Ultra 100"
-    ["raptorlake"]="Intel Core 14th & 13th gen"
-    ["alderlake"]="Intel Core 12th gen"
-    ["rocketlake"]="Intel Core 11th gen (see https://en.wikipedia.org/wiki/Rocket_Lake)"
-    ["tigerlake"]="Intel Laptop Core 11th gen"
-    ["icelake-client"]="Intel Desktop Core 10th gen"
-    ["skylake"]="Intel Desktop Core 6th to 9th gen"
-  )
-
-  # Normalize compiler
-  [[ "$_compiler" == "clang" ]] && _compiler="llvm"
-
-  # Validate and sanitize _processor_opt
-  if [[ " ${_valid_cpu_opts[*]} " =~ " ${_processor_opt} " ]]; then
-    case "$_processor_opt" in
-      native_amd|native_intel)
-        _march_flag="-march=native"
-        ;;
-      x86-64)
-        _march_flag="-march=x86-64"
-        ;;
-      *)
-        _march_flag="-march=${_processor_opt}"
-        ;;
-    esac
-  else
-    msg2 "Invalid or unset CPU arch; falling back to 'x86-64'"
-    _march_flag="-march=x86-64"
-  fi
-
-  # === LLVM TOOLCHAIN CONFIG ===
-  if [[ "$_compiler" == "llvm" ]]; then
-    export CC=clang
-    export CXX=clang++
-    export CPP=clang-cpp
-    export LD=ld.lld
-    export AR=llvm-ar
-    export NM=llvm-nm
-    export STRIP=llvm-strip
-    export OBJCOPY=llvm-objcopy
-    export OBJDUMP=llvm-objdump
-    export RANLIB=llvm-ranlib
-    export READELF=llvm-readelf
-    export AS=llvm-as
-    export CFLAGS+="${_march_flag} -pipe -fomit-frame-pointer"
-    export CXXFLAGS="${CFLAGS} -stdlib=libc++"
-    export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-    export LDFLAGS="-fuse-ld=lld -Wl,--as-needed"
-    export KCPPFLAGS="${CPPFLAGS}"
-
-  # === GCC TOOLCHAIN CONFIG ===
-  elif [[ "$_compiler" == "gcc" ]]; then
-    export CC=gcc
-    export CXX=g++
-    export CPP=cpp
-    export LD=ld
-    export AR=ar
-    export NM=nm
-    export STRIP=strip
-    export OBJCOPY=objcopy
-    export OBJDUMP=objdump
-    export RANLIB=ranlib
-    export READELF=readelf
-    export AS=as
-    export CFLAGS+="${_march_flag} -pipe -fomit-frame-pointer"
-    export CXXFLAGS="${CFLAGS}"
-    export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-    export LDFLAGS="-Wl,--as-needed"
-    export KCPPFLAGS="${CPPFLAGS}"
-  fi
-
-  # === BUILD EXECUTION ===
-  if [[ "$_compiler" == "llvm" ]]; then
-    time (make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1) 3>&1 1>&2 2>&3
-  elif [[ "$_compiler" == "gcc" ]]; then
-    time (make ${_force_all_threads} LOCALVERSION= bzImage modules 2>&1) 3>&1 1>&2 2>&3
-  else
-    msg2 "❌ Unknown compiler: $_compiler"
-    return 1
-  fi
-  return 0
 }
 
 hackbase() {
