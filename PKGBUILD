@@ -84,7 +84,6 @@ prepare() {
 
 build() {
   source "$_where"/TKT_CONFIG
-  source "$_where"/kconfigs/prepare
 
   cd "$_kernel_work_folder_abs"
 
@@ -118,17 +117,44 @@ build() {
 
   # build!
 
-  # Approved list of CPU arch targets
-  if [[ -v "_cpu_marchs[$_processor_opt]" ]]; then
-    if [[ "$_processor_opt" == "native" ]]; then
-      _march_flag="-march=native"
-    else
-      _march_flag="-march=${_processor_opt}"
-    fi
-  else
-    msg2 "Invalid or unset CPU arch '${_processor_opt}'; falling back to 'x86-64'"
-    _march_flag="-march=x86-64"
+  # Check for schedtool + ionice (optional perf tuning)
+  if pacman -Qq schedtool &>/dev/null; then
+    msg2 "Using schedtool"
+    _schedtool="command schedtool -B -n 1"
+    _ionice="command ionice -n 1"
   fi
+
+  _runtime=$(
+    if [ -n "$_schedtool" ]; then
+      _pid="$(exec bash -c 'echo "$PPID"')"
+      $_schedtool "$_pid" ||:
+      $_ionice -p "$_pid" ||:
+    fi
+  )
+
+  # Approved list of CPU arch targets
+  typeset -Ag _cpu_marchs=(
+    ["x86-64"]="Baseline for any X86 CPU (default)"
+    ["x86-64-v2"]="Baseline for X86 CPUs newer than ~2008 (see https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)"
+    ["x86-64-v3"]="Baseline for X86 CPUS newer than ~2013 (see link above)"
+    ["x86-64-v4"]="Baseline for Intel Skylake or newer, AMD zen4 or newer (see link above)"
+    ["native"]="Automatically tune for the current CPU"
+    ["znver5"]="AMD Ryzen 9000 | Mobile Ryzen AI (MAX) 300 | EPYC 9005"
+    ["znver4"]="AMD Ryzen 8000/7000 | Mobile Ryzen 200 | Threadripper 7000WX | EPYC 9004/8004/4004"
+    ["znver3"]="AMD Ryzen 6000/5000 | Mobile Ryzen 7030/5000 | Threadripper 5000WX | EPYC 7003"
+    ["znver2"]="AMD Ryzen 4000/3000 | Mobile Ryzen 5[3,5,7]00U | Threadripper 3000WX | EPYC 7002"
+    ["znver1"]="AMD Ryzen 1000/2000 | Athlon 200/300/3000 | Threadripper 1000 | EPYC 7001"
+    ["arrowlake-s"]="Intel Desktop Core Ultra 200"
+    ["arrowlake"]="Intel Laptop Core Ultra 200"
+    ["lunarlake"]="Intel Laptop Core Ultra 200V"
+    ["meteorlake"]="Intel Laptop Core Ultra 100"
+    ["raptorlake"]="Intel Core 14th & 13th gen"
+    ["alderlake"]="Intel Core 12th gen"
+    ["rocketlake"]="Intel Core 11th gen (see https://en.wikipedia.org/wiki/Rocket_Lake)"
+    ["tigerlake"]="Intel Laptop Core 11th gen"
+    ["icelake-client"]="Intel Desktop Core 10th gen"
+    ["skylake"]="Intel Desktop Core 6th to 9th gen"
+  )
 
   # Normalize compiler
   [[ "$_compiler" == "clang" ]] && _compiler="llvm"
@@ -150,21 +176,6 @@ build() {
     msg2 "Invalid or unset CPU arch; falling back to 'x86-64'"
     _march_flag="-march=x86-64"
   fi
-
-  # Check for schedtool + ionice (optional perf tuning)
-  if pacman -Qq schedtool &>/dev/null; then
-    msg2 "Using schedtool"
-    _schedtool="command schedtool -B -n 1"
-    _ionice="command ionice -n 1"
-  fi
-
-  _runtime=$(
-    if [ -n "$_schedtool" ]; then
-      _pid="$(exec bash -c 'echo "$PPID"')"
-      $_schedtool "$_pid" || :
-      $_ionice -p "$_pid" || :
-    fi
-  )
 
   # === LLVM TOOLCHAIN CONFIG ===
   if [[ "$_compiler" == "llvm" ]]; then
@@ -209,13 +220,9 @@ build() {
 
   # === BUILD EXECUTION ===
   if [[ "$_compiler" == "llvm" ]]; then
-    time (
-      make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1
-    ) 3>&1 1>&2 2>&3
+    time (make ${_force_all_threads} ${llvm_opt} LOCALVERSION= bzImage modules 2>&1) 3>&1 1>&2 2>&3
   elif [[ "$_compiler" == "gcc" ]]; then
-    time (
-      make ${_force_all_threads} LOCALVERSION= bzImage modules 2>&1
-    ) 3>&1 1>&2 2>&3
+    time (make ${_force_all_threads} LOCALVERSION= bzImage modules 2>&1) 3>&1 1>&2 2>&3
   else
     msg2 "❌ Unknown compiler: $_compiler"
     return 1
