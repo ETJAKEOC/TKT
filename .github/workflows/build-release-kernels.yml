@@ -67,24 +67,23 @@ jobs:
         run: |
           files_list=$(find *-kernel-packages-* -type f | paste -sd' ')
           dynamic_tag="${{ needs.kver-checks.outputs.latest_kernel }}-$(date +'%Y%m%d-%H%M')"
-          release_notes=$(cat <<'EOF'
-                    🔥 **TKT ${dynamic_tag} — GitHub CI Autobuilt Kernels** 🔥
 
-                    This release includes **24 precompiled Linux kernel images**, built using the latest upstream kernel \`${{ needs.kver-checks.outputs.latest_kernel }}\`, configured with TKT’s \`_kernel_on_diet\` mode for lightweight performance and minimal bloat.
+          release_notes="🔥 **TKT ${dynamic_tag} — GHCI Prebuilt Kernels** 🔥
 
-                    🔧 **What's included:**
-                    - 💻 **Distros:** Arch, Debian, Fedora, Slackware, SUSE, Ubuntu
-                    - 🧠 **Compilers:** GCC & LLVM/Clang
-                    - ⚙ **Schedulers:** EEVDF & BORE
-                    - 🧩 **Total Builds:** 6 distros × 2 compilers × 2 schedulers = **24 unique kernel builds**
+          This release includes **24 precompiled Linux kernel images**, built using the latest upstream kernel \`v6.15.4\`, configured with TKT’s \`_kernel_on_diet\` mode for lightweight performance and minimal bloat.
 
-                    🧪 **Note:** If you encounter system instability or hardware issues, consider rebuilding with \`_kernel_on_diet\` disabled for improved compatibility.
+          🔧 **What's included:**
+          - 💻 **Distros:** Arch, Debian, Fedora, Slackware, SUSE, Ubuntu
+          - 🧠 **Compilers:** GCC & LLVM/Clang
+          - ⚙ **Schedulers:** EEVDF & BORE
+          - 🧩 **Total Builds:** 6 distros × 2 compilers × 2 schedulers = **24 unique kernel builds**
 
-                    🚀 This is intended for power users, performance tuners, and minimalists who want a no-bullshit kernel built for responsiveness and control.
+          🧪 **Note:** If you encounter system instability or hardware issues, consider rebuilding with \`_kernel_on_diet\` disabled for improved compatibility.
 
-                    Feedback, issues, or patches? [Open an issue](https://github.com/ETJAKEOC/TKT/issues).
-                    EOF
-                    )
+          🚀 This is intended for power users, performance tuners, and minimalists who want a no-bullshit kernel built for responsiveness and control.
+
+          Feedback, issues, or patches? [Open an issue](https://github.com/ETJAKEOC/TKT/issues)."
+
           gh release create "$dynamic_tag" $files_list --latest \
-            --title "TKT ${dynamic_tag} — Multi-Distro, Multi-Compiler Kernel Pack" \
+            --title "TKT ${dynamic_tag} — GHCI Prebuilt Diet Kernel" \
             --notes "$release_notes"
