@@ -1,3 +1,4 @@
+
 8021q
 8250_dw
 842
@@ -20,6 +21,7 @@ aesni_intel
 af_alg
 af_key
 af_packet
+agp
 agpgart
 ahci
 algif_aead
@@ -105,6 +107,7 @@ coretemp
 cp210x
 cpufreq_ondemand
 cqhci
+cramfs
 crc16
 crc32c_generic
 crc32c_intel
@@ -156,6 +159,7 @@ drm_panel_orientation_quirks
 drm_shmem_helper
 drm_suballoc_helper
 drm_ttm_helper
+drm_vram_helper
 dummy
 dvb_core
 e1000
@@ -185,11 +189,13 @@ f2fs
 failover
 fan
 fat
+fbdev
 fb_sys_fops
 ff_memless
 firewire_ohci
 fixed_phy
 fjes
+floppy
 ftdi_sio
 fuse
 fwnode_mdio
@@ -259,6 +265,7 @@ ideapad_laptop
 idma64
 igb
 igc
+igen6_edac
 inet_diag
 input_leds
 int3400_thermal
@@ -439,6 +446,8 @@ nft_fib_ipv4
 nft_fib_ipv6
 nft_masq
 nft_nat
+nf_tproxy_ipv4
+nf_tproxy_ipv6
 nft_reject
 nft_reject_inet
 nft_reject_ipv4
@@ -459,6 +468,7 @@ nvidia_uvm
 nvidia_wmi_ec_backlight
 nvme
 nvme_auth
+nvme_common
 nvme_core
 nvmem_rave_sp_eeprom
 nvram
@@ -472,6 +482,7 @@ pata_acpi
 pata_atiixp
 pcc_cpufreq
 pcieport
+pci_stub
 pcspkr
 pinctrl_alderlake
 pinctrl_amd
@@ -621,6 +632,7 @@ snd_soc_acpi_intel_match
 snd_soc_core
 snd_soc_dmic
 snd_soc_hdac_hda
+snd_soc_hdac_hdmi
 snd_soc_intel_hda_dsp_common
 snd_soc_intel_sof_board_helpers
 snd_soc_skl_hda_dsp
@@ -689,6 +701,7 @@ tpm_crb
 tpm_tis
 tpm_tis_core
 trusted
+ts_bm
 ttm
 tun
 tuner_simple
@@ -742,11 +755,16 @@ videobuf2_v4l2
 videobuf2_vmalloc
 videodev
 virt_dma
+virtio
+virtio_balloon
 virtio_blk
+virtio_console
+virtio_gpu
 virtio_net
 virtio_pci
 virtio_pci_legacy_dev
 virtio_pci_modern_dev
+virtio_ring
 virtio_scsi
 vivaldi_fmap
 vmw_balloon
@@ -800,7 +818,9 @@ xt_recent
 xt_REDIRECT
 xt_set
 xt_state
+xt_string
 xt_tcpudp
+xt_TPROXY
 xxhash_generic
 zlib_deflate
 zram
