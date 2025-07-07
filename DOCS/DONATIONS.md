@@ -1,8 +1,16 @@
-# DONATIONS ACCEPTED
+## 💸 Donations
 
-If you appreciate the product/service that we offer, and wanted to provide a donation, we are currently accepting at Venmo @ETJAKEOC
+If you appreciate the product or service we offer and want to support it, you can donate crypto at any of these wallets:
 
-If this project takes off, and further donation platforms are required, then they may be explored.
-I appreciate each and every single donation. They are not required, but they are appreciated none-the-less!
+- 🟠 **Bitcoin (BTC)**: `32pWcnrYUSbBac779JPmgv23ovYcrXeGxd`
+- 🟣 **Ethereum (ETH)**: `0x264B0201D131C08995392B7Aeb3a44A6CFB58456`
+- 🐕 **Dogecoin (DOGE)**: `DKkp76o1rgydmrgxaFypydB8ztxHJDu8XN`
+- 🟢 **Litecoin (LTC)**: `MLfHL6oUkcefi4mjXFvtF7xpQ283B44uze`
+  
+Your support is never required, but always deeply appreciated — and it helps keep this project alive and improving.
 
-- ETJAKEOC
+If this project takes off and more donation options are needed, I’ll explore adding them.
+
+**Thank you for your support — every sat, wei, and shibe counts!**
+
+— **ETJAKEOC**

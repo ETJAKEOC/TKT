@@ -11,7 +11,7 @@ echo "Please press enter to continue."
 read -r dummy_variable
 
 # Find the TKT kernel package
-tkt_k=$(find /lib/modules -name 'kernel*tkt*')
+tkt_k=$(find /lib/modules -name '*TKT*')
 
 if [ -z "$tkt_k" ]; then
     echo "Error: TKT kernel package not found."

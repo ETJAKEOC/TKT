@@ -66,14 +66,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           files_list=$(find *-kernel-packages-* -type f | paste -sd' ')
-          dynamic_tag="${{ needs.kver-checks.outputs.latest_kernel }}-$(date +'%Y%m%d-%H%M')"
+          dynamic_tag="${{ needs.kver-checks.outputs.latest_kernel }}-tkt"
 
           release_notes="🔥 **TKT ${dynamic_tag} — GHCI Prebuilt Kernels** 🔥
 
-          This release includes **24 precompiled Linux kernel images**, built using the latest upstream kernel \`v6.15.4\`, configured with TKT’s \`_kernel_on_diet\` mode for lightweight performance and minimal bloat.
+          This release includes **24 precompiled Linux kernel images**, built using the latest upstream kernel \`$latest_kernel\`, configured with TKT’s \`_kernel_on_diet\` mode for lightweight performance and minimal bloat.
 
           🔧 **What's included:**
-          - 💻 **Distros:** Arch, Debian, Fedora, Slackware, SUSE, Ubuntu
+          - 💻 **Distros (and their derivitives):** Arch, Debian, Fedora, Slackware, SUSE, Ubuntu
           - 🧠 **Compilers:** GCC & LLVM/Clang
           - ⚙ **Schedulers:** EEVDF & BORE
           - 🧩 **Total Builds:** 6 distros × 2 compilers × 2 schedulers = **24 unique kernel builds**

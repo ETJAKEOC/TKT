@@ -1,30 +1,58 @@
-diff --git a/scripts/package/kernel.spec b/scripts/package/kernel.spec
-index 3eee0143e0..bd1a95c897 100644
---- a/scripts/package/kernel.spec
-+++ b/scripts/package/kernel.spec
-@@ -27,8 +28,8 @@ The Linux Kernel, the operating system core itself
+--- linux/scripts/package/kernel.spec	2025-07-14 07:49:29.789253637 -0400
++++ linux/scripts/package/kernel.spec	2025-07-14 12:11:23.517664683 -0400
+@@ -1,33 +1,30 @@
+-# _arch is undefined if /usr/lib/rpm/platform/*/macros was not included.
+ %{!?_arch: %define _arch dummy}
+ %{!?make: %define make make}
+ %define makeflags %{?_smp_mflags} ARCH=%{ARCH}
+ 
+ Name: kernel
+-Summary: The Linux Kernel
++Summary: TꓘT's Linux Kernel
+ Version: %(echo %{KERNELRELEASE} | sed -e 's/-/_/g')
+ Release: %{pkg_release}
+ License: GPL
+ Group: System Environment/Kernel
+-Vendor: The Linux Community
+-URL: https://www.kernel.org
++Vendor: TꓘT
++URL: https://github.com/ETJAKEOC/TKT
+ Source0: linux.tar.gz
+ Source1: config
+ Source2: diff.patch
+ Provides: kernel-%{KERNELRELEASE}
+-BuildRequires: bc binutils bison dwarves
+-BuildRequires: (elfutils-devel or libdw-devel)
+-BuildRequires: (elfutils-libelf-devel or libelf-devel) flex
+-BuildRequires: gcc make openssl openssl-devel perl python3 rsync
++BuildRequires: bc binutils bison dwarves flex gcc make openssl openssl-devel perl python3 rsync
++BuildRequires: (elfutils-devel or libdw-devel) (elfutils-libelf-devel or libelf-devel)
+ 
+ %description
+-The Linux Kernel, the operating system core itself
++The Linux Kernel, the operating system core itself, given some love by the TꓘT team.
+ 
  %package headers
  Summary: Header files for the Linux kernel for use by glibc
  Group: Development/System
--Obsoletes: kernel-headers
+-Obsoletes: kernel-headers < %{version}
  Provides: kernel-headers = %{version}
 +Provides: installonlypkg(kernel) = %{version}
  %description headers
  Kernel-headers includes the C header files that specify the interface
  between the Linux kernel and userspace libraries and programs.  The
-@@ -40,12 +41,31 @@ glibc package.
- %package devel
- Summary: Development package for building kernel modules to match the %{version} kernel
- Group: System Environment/Kernel
-+Provides: kernel-devel = %{version}
-+Provides: kernel-devel-uname-r = %{version}
-+Provides: installonlypkg(kernel) = %{version}
- AutoReqProv: no
- %description -n kernel-devel
- This package provides kernel headers and makefiles sufficient to build modules
- against the %{version} kernel package.
+@@ -60,14 +55,22 @@
+ %global _no_recompute_build_ids 1
+ %{debug_package}
  %endif
- 
+-# some (but not all) versions of rpmbuild emit %%debug_package with
+-# %%install. since we've already emitted it manually, that would cause
+-# a package redefinition error. ensure that doesn't happen
+ %define debug_package %{nil}
+-
+-# later, we make all modules executable so that find-debuginfo.sh strips
+-# them up. but they don't actually need to be executable, so remove the
+-# executable bit, taking care to do it _after_ find-debuginfo.sh has run
 +# Opt out of a lot of Fedora hardening flags etc...
 +# See https://src.fedoraproject.org/rpms/redhat-rpm-config//blob/rawhide/f/buildflags.md
 +%undefine _package_note_file
@@ -40,7 +68,14 @@ index 3eee0143e0..bd1a95c897 100644
 +# Nearly had to go to the deep web to find documentation on this one... Gosh
 +# See https://github.com/rpm-software-management/rpm/blob/master/macros.in#L471
 +%define _build_id_links none
-+
- %prep
- %setup -q -n linux
- cp %{SOURCE1} .config
+ %define __spec_install_post \
+ 	%{?__debug_package:%{__debug_install_post}} \
+ 	%{__arch_install_post} \
+@@ -152,6 +150,7 @@
+ if [ ! -e "/lib/modules/%{KERNELRELEASE}/modules.dep" ]; then
+ 	/usr/sbin/depmod %{KERNELRELEASE}
+ fi
++/usr/bin/dracut --force --hostonly --kver %{KERNELRELEASE}
+ 
+ %preun
+ if [ -x /usr/bin/kernel-install ]; then

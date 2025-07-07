@@ -41,12 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           zypper refresh
-          zypper --non-interactive install \
-            bc bison ccache clang curl dwarves flex gcc-c++ gawk git hostname \
-            kernel-devel libXi-devel libuuid-devel lld llvm lz4 make ncurses-devel libnuma-devel \
-            libopenssl-devel libdw-devel patchutils perl pesign python3 python311-devel python311-pip \
-            libqt5-qtbase-devel rpm-build rsync wget zstd \
-            libelf-devel systemd-devel
+          zypper --non-interactive install awk curl git
           zypper clean -a
 
       - name: Checkout TKT
@@ -67,17 +62,9 @@ jobs:
           _distro="Suse" _compiler="${{ inputs.compiler }}" yes '' | ./install.sh install || true
           set -o pipefail
 
-      - name: Rename RPM files to $arch-linux format
-        run: |
-          arch=$(uname -m)
-          for file in RPMS/kernel*.rpm; do
-            base=$(basename "$file")
-            mv "$file" "RPMS/SUSE-linux-${arch}-${base#kernel-}"
-          done
-
       - name: Package RPM files
         run: |
-          tar czf SUSE-linux-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz RPMS/*.rpm
+          tar czf SUSE-linux-diet-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz */*.rpm
 
       - uses: actions/upload-artifact@v4
         with:

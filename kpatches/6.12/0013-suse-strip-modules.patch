@@ -1,0 +1,11 @@
+--- linux/scripts/package/kernel.spec	2025-07-14 11:14:52.869528184 -0400
++++ linux/scripts/package/kernel.spec	2025-07-14 11:15:22.661401293 -0400
+@@ -74,7 +74,7 @@
+ %install
+ mkdir -p %{buildroot}/usr/lib/modules/%{KERNELRELEASE}
+ cp $(%{make} %{makeflags} -s image_name) %{buildroot}/usr/lib/modules/%{KERNELRELEASE}/vmlinuz
+-%{make} %{makeflags} INSTALL_MOD_PATH=%{buildroot}/usr DEPMOD=true modules_install
++%{make} %{makeflags} INSTALL_MOD_PATH=%{buildroot}/usr DEPMOD=true INSTALL_MOD_STRIP=1 modules_install
+ %{make} %{makeflags} INSTALL_HDR_PATH=%{buildroot}/usr headers_install
+ cp System.map %{buildroot}/usr/lib/modules/%{KERNELRELEASE}
+ cp .config %{buildroot}/usr/lib/modules/%{KERNELRELEASE}/config

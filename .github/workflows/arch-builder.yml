@@ -18,6 +18,7 @@ env:
   _STRIP: "true"
   _kernel_on_diet: "true"
   _nofallback: "false"
+  _distro: "Arch"
 
 jobs:
   build-kernel:
@@ -42,9 +43,10 @@ jobs:
       - name: Install dependencies and cleanup
         run: |
           pacman -Syu --needed --noconfirm \
-            git clang llvm lld base-devel sudo bison xmlto docbook-xsl inetutils bc \
-            libelf pahole patchutils flex python-sphinx python-sphinx_rtd_theme \
-            graphviz imagemagick cpio perl tar xz schedtool coreutils kmod initramfs
+            base-devel bc bison clang coreutils cpio docbook-xsl flex gcc git \
+            graphviz imagemagick inetutils initramfs kmod libelf lld llvm mkinitcpio pahole \
+            patchutils perl python-sphinx python-sphinx_rtd_theme schedtool sudo \
+            tar wget xmlto xz
           sudo rm -rf /var/cache/pacman/pkg/*
 
       - name: Checkout TKT

@@ -316,3 +316,4 @@ index ed9dac00ebfb18..b3fd5e9df44c6f 100644
  		dev_err(smu->adev->dev,
  			"New power limit (%d) is out of range [%d,%d]\n",
  			limit, smu->min_power_limit, smu->max_power_limit);
+

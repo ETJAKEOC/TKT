@@ -135,7 +135,7 @@ Depending on the system, you will get `.deb`, `.rpm`, or a generic kernel packag
 
 ## CONCLUSION:
 
-This is a crash course guide to get you comfortable working with the TKT kernel, and should for the most part, get you to a working kernel build. This is by no means a full on official step by step guide of how to compile a kernel, the TKG way or the standard Linux way. This is a project that I (ETJAKEOC) have taken my time to generate in order to help me bring more users to the same project that brings me great joy using my computer. I have noticed many performance boosts using the TKG kernel over the stock kernel on my machines, and love the install script and it`s options. This is why I forked it and wrote up this guide to go alongside it, in an attempt to encourage others to play with their kernels, and show that that it is not a scary place to work in.
+This is a crash course guide to get you comfortable working with the TKT kernel, and should for the most part, get you to a working kernel build. This is by no means a full on official step by step guide of how to compile a kernel, the TKT way or the standard Linux way. This is a project that I (ETJAKEOC) have taken my time to generate in order to help me bring more users to the same project that brings me great joy using my computer. I have noticed many performance boosts using the TKT kernel over the stock kernel on my machines, and love the install script and it`s options. This is why I forked it and wrote up this guide to go alongside it, in an attempt to encourage others to play with their kernels, and show that that it is not a scary place to work in.
 
 ## SUPPORT:
 

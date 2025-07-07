@@ -20,6 +20,7 @@ aesni_intel
 af_alg
 af_key
 af_packet
+agp
 agpgart
 ahci
 algif_aead
@@ -40,6 +41,7 @@ appletalk
 asn1_encoder
 asus_atk0110
 asus_nb_wmi
+asus_wireless
 asus_wmi
 at24
 ata_generic
@@ -105,6 +107,7 @@ coretemp
 cp210x
 cpufreq_ondemand
 cqhci
+cramfs
 crc16
 crc32c_generic
 crc32c_intel
@@ -156,8 +159,10 @@ drm_panel_orientation_quirks
 drm_shmem_helper
 drm_suballoc_helper
 drm_ttm_helper
+drm_vram_helper
 dummy
 dvb_core
+dw_dmac
 e1000
 e1000e
 ebtable_filter
@@ -185,11 +190,13 @@ f2fs
 failover
 fan
 fat
+fbdev
 fb_sys_fops
 ff_memless
 firewire_ohci
 fixed_phy
 fjes
+floppy
 ftdi_sio
 fuse
 fwnode_mdio
@@ -259,6 +266,7 @@ ideapad_laptop
 idma64
 igb
 igc
+igen6_edac
 inet_diag
 input_leds
 int3400_thermal
@@ -268,6 +276,7 @@ intel_agp
 intel_cstate
 intel_gtt
 intel_hid
+intel_int0002_vgpio
 intel_ish_ipc
 intel_ishtp
 intel_ishtp_hid
@@ -287,6 +296,7 @@ intel_uncore_frequency_common
 intel_vpu
 intel_vsec
 intel_wmi_thunderbolt
+intel_xhci_usb_role_switch
 iommufd
 ip6table_filter
 ip6table_mangle
@@ -374,6 +384,7 @@ mei_gsc
 mei_hdcp
 mei_me
 mei_pxp
+mei_txe
 mii
 minix
 mmc_block
@@ -437,8 +448,11 @@ nft_fib
 nft_fib_inet
 nft_fib_ipv4
 nft_fib_ipv6
+nft_limit
 nft_masq
 nft_nat
+nf_tproxy_ipv4
+nf_tproxy_ipv6
 nft_reject
 nft_reject_inet
 nft_reject_ipv4
@@ -452,6 +466,7 @@ nls_iso8859_1
 nls_utf8
 nouveau
 ntfs3
+ntsync
 nvidia
 nvidia_drm
 nvidia_modeset
@@ -459,7 +474,9 @@ nvidia_uvm
 nvidia_wmi_ec_backlight
 nvme
 nvme_auth
+nvme_common
 nvme_core
+nvme_keyring
 nvmem_rave_sp_eeprom
 nvram
 of_mdio
@@ -472,6 +489,7 @@ pata_acpi
 pata_atiixp
 pcc_cpufreq
 pcieport
+pci_stub
 pcspkr
 pinctrl_alderlake
 pinctrl_amd
@@ -499,6 +517,8 @@ processor_thermal_wt_req
 psmouse
 psnap
 ptp
+pwm_lpss
+pwm_lpss_platform
 qcserial
 qemu_fw_cfg
 qrtr
@@ -553,6 +573,7 @@ scsi_transport_fc
 scsi_transport_sas
 sctp
 sdhci
+sdhci_acpi
 sdhci-pci
 sdhci_pci
 sd_mod
@@ -621,6 +642,7 @@ snd_soc_acpi_intel_match
 snd_soc_core
 snd_soc_dmic
 snd_soc_hdac_hda
+snd_soc_hdac_hdmi
 snd_soc_intel_hda_dsp_common
 snd_soc_intel_sof_board_helpers
 snd_soc_skl_hda_dsp
@@ -658,6 +680,7 @@ sp5100_tco
 sparse_keymap
 spi_intel
 spi_intel_pci
+spi_intel_platform
 spi_nor
 squashfs
 sr_mod
@@ -689,6 +712,7 @@ tpm_crb
 tpm_tis
 tpm_tis_core
 trusted
+ts_bm
 ttm
 tun
 tuner_simple
@@ -716,6 +740,7 @@ usbcore
 usbhid
 usbip_core
 usbip_host
+usblp
 usbmon
 usbnet
 usb_storage
@@ -742,11 +767,16 @@ videobuf2_v4l2
 videobuf2_vmalloc
 videodev
 virt_dma
+virtio
+virtio_balloon
 virtio_blk
+virtio_console
+virtio_gpu
 virtio_net
 virtio_pci
 virtio_pci_legacy_dev
 virtio_pci_modern_dev
+virtio_ring
 virtio_scsi
 vivaldi_fmap
 vmw_balloon
@@ -800,7 +830,9 @@ xt_recent
 xt_REDIRECT
 xt_set
 xt_state
+xt_string
 xt_tcpudp
+xt_TPROXY
 xxhash_generic
 zlib_deflate
 zram

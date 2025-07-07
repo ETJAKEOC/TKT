@@ -44,7 +44,10 @@ jobs:
 
       - name: Install dependencies and clean-up
         run: |
-          yes | slackpkg -batch=on -default_answer=y install bash bc bison binutils brotli clang cpio curl cyrus-sasl dwarves elfutils fakeroot fakeroot-ng file flex gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust gc glibc git guile gzip kernel-headers kmod libedit libelf libxml2 lld llvm lz4 lzop m4 make ncurses nghttp2 nghttp3 openssl patchutils perl python3 python3-pip rsync spirv-llvm-translator sudo tar time wget xxHash xz zstd
+          yes | slackpkg -batch=on -default_answer=y install bash bc bison ccache cmake cpio curl flex git kmod lz4 make patchutils perl python3 python3-pip \
+          rsync sudo tar time wget zstd binutils brotli cyrus-sasl diffutils dwarves elfutils fakeroot fakeroot-ng file gc gcc gcc-g++ gcc-gcobol gcc-gdc \
+          gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust glibc git guile gzip kernel-headers libedit libelf libxml2 lzop m4 ncurses nghttp2 nghttp3 \
+          openssl perl schedtool spirv-llvm-translator xxHash xz
 
       - name: Checkout TKT
         uses: actions/checkout@v4
@@ -64,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: slackware-kernel-packages-${{ inputs._cpusched }}-${{ inputs.compiler }}
-          path: SLACKPKGS/*.txz
+          path: "*/*.txz"
 
       - name: Create GitHub Release
         if: github.ref_type == 'tag'
@@ -79,4 +82,4 @@ jobs:
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: SLACKPKGS/*.txz
+          files: "*/*.txz"

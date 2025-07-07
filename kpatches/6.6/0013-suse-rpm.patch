@@ -1,0 +1,165 @@
+--- linux/scripts/package/kernel.spec	2025-07-14 07:49:29.789253637 -0400
++++ linux/scripts/package/kernel.spec	2025-07-14 10:57:42.242570073 -0400
+@@ -1,33 +1,30 @@
+-# _arch is undefined if /usr/lib/rpm/platform/*/macros was not included.
+ %{!?_arch: %define _arch dummy}
+ %{!?make: %define make make}
+ %define makeflags %{?_smp_mflags} ARCH=%{ARCH}
+ 
+ Name: kernel
+-Summary: The Linux Kernel
++Summary: TꓘT's Linux Kernel
+ Version: %(echo %{KERNELRELEASE} | sed -e 's/-/_/g')
+ Release: %{pkg_release}
+ License: GPL
+ Group: System Environment/Kernel
+-Vendor: The Linux Community
+-URL: https://www.kernel.org
++Vendor: TꓘT
++URL: https://github.com/ETJAKEOC/TKT
+ Source0: linux.tar.gz
+ Source1: config
+ Source2: diff.patch
+ Provides: kernel-%{KERNELRELEASE}
+-BuildRequires: bc binutils bison dwarves
+-BuildRequires: (elfutils-devel or libdw-devel)
+-BuildRequires: (elfutils-libelf-devel or libelf-devel) flex
+-BuildRequires: gcc make openssl openssl-devel perl python3 rsync
++BuildRequires: bc binutils bison dwarves flex gcc make openssl openssl-devel perl python3 rsync
++BuildRequires: (elfutils-devel or libdw-devel) (elfutils-libelf-devel or libelf-devel)
+ 
+ %description
+-The Linux Kernel, the operating system core itself
++The Linux Kernel, the operating system core itself, given some love by the TꓘT team.
+ 
+ %package headers
+ Summary: Header files for the Linux kernel for use by glibc
+ Group: Development/System
+-Obsoletes: kernel-headers < %{version}
+ Provides: kernel-headers = %{version}
++Provides: installonlypkg(kernel) = %{version}
+ %description headers
+ Kernel-headers includes the C header files that specify the interface
+ between the Linux kernel and userspace libraries and programs.  The
+@@ -46,8 +43,6 @@
+ %endif
+ 
+ %if %{with_debuginfo}
+-# list of debuginfo-related options taken from distribution kernel.spec
+-# files
+ %undefine _include_minidebuginfo
+ %undefine _find_debuginfo_dwz_opts
+ %undefine _unique_build_ids
+@@ -60,19 +55,12 @@
+ %global _no_recompute_build_ids 1
+ %{debug_package}
+ %endif
+-# some (but not all) versions of rpmbuild emit %%debug_package with
+-# %%install. since we've already emitted it manually, that would cause
+-# a package redefinition error. ensure that doesn't happen
+ %define debug_package %{nil}
+-
+-# later, we make all modules executable so that find-debuginfo.sh strips
+-# them up. but they don't actually need to be executable, so remove the
+-# executable bit, taking care to do it _after_ find-debuginfo.sh has run
+ %define __spec_install_post \
+ 	%{?__debug_package:%{__debug_install_post}} \
+ 	%{__arch_install_post} \
+ 	%{__os_install_post} \
+-	find %{buildroot}/lib/modules/%{KERNELRELEASE} -name "*.ko" -type f \\\
++	find %{buildroot}/usr/lib/modules/%{KERNELRELEASE} -name "*.ko" -type f \\\
+ 		| xargs --no-run-if-empty chmod u-x
+ 
+ %prep
+@@ -84,48 +72,43 @@
+ %{make} %{makeflags} KERNELRELEASE=%{KERNELRELEASE} KBUILD_BUILD_VERSION=%{release}
+ 
+ %install
+-mkdir -p %{buildroot}/lib/modules/%{KERNELRELEASE}
+-cp $(%{make} %{makeflags} -s image_name) %{buildroot}/lib/modules/%{KERNELRELEASE}/vmlinuz
+-# DEPMOD=true makes depmod no-op. We do not package depmod-generated files.
+-%{make} %{makeflags} INSTALL_MOD_PATH=%{buildroot} DEPMOD=true modules_install
++mkdir -p %{buildroot}/usr/lib/modules/%{KERNELRELEASE}
++cp $(%{make} %{makeflags} -s image_name) %{buildroot}/usr/lib/modules/%{KERNELRELEASE}/vmlinuz
++%{make} %{makeflags} INSTALL_MOD_PATH=%{buildroot}/usr DEPMOD=true modules_install
+ %{make} %{makeflags} INSTALL_HDR_PATH=%{buildroot}/usr headers_install
+-cp System.map %{buildroot}/lib/modules/%{KERNELRELEASE}
+-cp .config %{buildroot}/lib/modules/%{KERNELRELEASE}/config
++cp System.map %{buildroot}/usr/lib/modules/%{KERNELRELEASE}
++cp .config %{buildroot}/usr/lib/modules/%{KERNELRELEASE}/config
+ if %{make} %{makeflags} run-command KBUILD_RUN_COMMAND='test -d ${srctree}/arch/${SRCARCH}/boot/dts' 2>/dev/null; then
+-	%{make} %{makeflags} INSTALL_DTBS_PATH=%{buildroot}/lib/modules/%{KERNELRELEASE}/dtb dtbs_install
++	%{make} %{makeflags} INSTALL_DTBS_PATH=%{buildroot}/usr/lib/modules/%{KERNELRELEASE}/dtb dtbs_install
+ fi
+-ln -fns /usr/src/kernels/%{KERNELRELEASE} %{buildroot}/lib/modules/%{KERNELRELEASE}/build
++ln -fns /usr/src/kernels/%{KERNELRELEASE} %{buildroot}/usr/lib/modules/%{KERNELRELEASE}/build
+ %if %{with_devel}
+ %{make} %{makeflags} run-command KBUILD_RUN_COMMAND='${srctree}/scripts/package/install-extmod-build %{buildroot}/usr/src/kernels/%{KERNELRELEASE}'
+ %endif
+ 
+ {
+-	echo "/lib/modules/%{KERNELRELEASE}"
++	echo "/usr/lib/modules/%{KERNELRELEASE}"
+ 
+ 	for x in alias alias.bin builtin.alias.bin builtin.bin dep dep.bin \
+ 				devname softdep symbols symbols.bin weakdep; do
+-		echo "%ghost /lib/modules/%{KERNELRELEASE}/modules.${x}"
++		echo "%ghost /usr/lib/modules/%{KERNELRELEASE}/modules.${x}"
+ 	done
+ 
+ 	for x in System.map config vmlinuz; do
+ 		echo "%ghost /boot/${x}-%{KERNELRELEASE}"
+ 	done
+ 
+-	if [ -d "%{buildroot}/lib/modules/%{KERNELRELEASE}/dtb" ];then
+-		find "%{buildroot}/lib/modules/%{KERNELRELEASE}/dtb" -printf "%%%ghost /boot/dtb-%{KERNELRELEASE}/%%P\n"
++	if [ -d "%{buildroot}/usr/lib/modules/%{KERNELRELEASE}/dtb" ];then
++		find "%{buildroot}/usr/lib/modules/%{KERNELRELEASE}/dtb" -printf "%%%ghost /boot/dtb-%{KERNELRELEASE}/%%P\n"
+ 	fi
+ 
+-	echo "%exclude /lib/modules/%{KERNELRELEASE}/build"
++	echo "%exclude /usr/lib/modules/%{KERNELRELEASE}/build"
+ } > %{buildroot}/kernel.list
+ 
+-# make modules executable so that find-debuginfo.sh strips them. this
+-# will be undone later in %%__spec_install_post
+-find %{buildroot}/lib/modules/%{KERNELRELEASE} -name "*.ko" -type f \
++find %{buildroot}/usr/lib/modules/%{KERNELRELEASE} -name "*.ko" -type f \
+ 	| xargs --no-run-if-empty chmod u+x
+ 
+ %if %{with_debuginfo}
+-# copying vmlinux directly to the debug directory means it will not get
+-# stripped (but its source paths will still be collected + fixed up)
+ mkdir -p %{buildroot}/usr/lib/debug/lib/modules/%{KERNELRELEASE}
+ cp vmlinux %{buildroot}/usr/lib/debug/lib/modules/%{KERNELRELEASE}
+ %endif
+@@ -140,16 +123,16 @@
+ 	/usr/bin/kernel-install add %{KERNELRELEASE} /lib/modules/%{KERNELRELEASE}/vmlinuz
+ fi
+ for file in vmlinuz System.map config; do
+-	if ! cmp --silent "/lib/modules/%{KERNELRELEASE}/${file}" "/boot/${file}-%{KERNELRELEASE}"; then
+-		cp "/lib/modules/%{KERNELRELEASE}/${file}" "/boot/${file}-%{KERNELRELEASE}"
++	if ! cmp --silent "/usr/lib/modules/%{KERNELRELEASE}/${file}" "/boot/${file}-%{KERNELRELEASE}"; then
++		cp "/usr/lib/modules/%{KERNELRELEASE}/${file}" "/boot/${file}-%{KERNELRELEASE}"
+ 	fi
+ done
+-if [ -d "/lib/modules/%{KERNELRELEASE}/dtb" ] && \
+-   ! diff -rq "/lib/modules/%{KERNELRELEASE}/dtb" "/boot/dtb-%{KERNELRELEASE}" >/dev/null 2>&1; then
++if [ -d "/usr/lib/modules/%{KERNELRELEASE}/dtb" ] && \
++   ! diff -rq "/usr/lib/modules/%{KERNELRELEASE}/dtb" "/boot/dtb-%{KERNELRELEASE}" >/dev/null 2>&1; then
+ 	rm -rf "/boot/dtb-%{KERNELRELEASE}"
+-	cp -r "/lib/modules/%{KERNELRELEASE}/dtb" "/boot/dtb-%{KERNELRELEASE}"
++	cp -r "/usr/lib/modules/%{KERNELRELEASE}/dtb" "/boot/dtb-%{KERNELRELEASE}"
+ fi
+-if [ ! -e "/lib/modules/%{KERNELRELEASE}/modules.dep" ]; then
++if [ ! -e "/usr/lib/modules/%{KERNELRELEASE}/modules.dep" ]; then
+ 	/usr/sbin/depmod %{KERNELRELEASE}
+ fi
+ 
+@@ -170,5 +153,5 @@
+ %files devel
+ %defattr (-, root, root)
+ /usr/src/kernels/%{KERNELRELEASE}
+-/lib/modules/%{KERNELRELEASE}/build
++/usr/lib/modules/%{KERNELRELEASE}/build
+ %endif

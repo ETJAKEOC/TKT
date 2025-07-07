@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-*Before reporting an issue, please check for relevant keywords in the issues search bar and the TKG kernel repository, including closed issues. The solution to your issue might be there already !*
+*Before reporting an issue, please check for relevant keywords in the issues search bar and the TKT kernel repository, including closed issues. The solution to your issue might be there already !*
 
 **Describe the bug**
  - Which OS do you encounter the bug on?

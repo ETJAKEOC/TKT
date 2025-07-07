@@ -5,6 +5,7 @@
 *.config
 *.orig
 *.log
+*.notes
 *.run
 *.tgz
 *.xz

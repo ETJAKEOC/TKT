@@ -4,17 +4,22 @@
 ## TꓘT (The Kernel Toolkit) - A linux-tkg fork
 
 #### Tested distro's so far;
-```
- -------------------------------
-| Arch Linux	=	Working |
-| Gentoo	=	Working |
-| Slackware	=	Working |
-| OpenSUSE = Working only if SELinux is disabled. This is a distro/userland issue, not kernel related. |
- -------------------------------
-```
+| Logo | Distro      | Status                                     |
+|------|-------------|--------------------------------------------|
+| <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Archlinux-logo-standard-version.svg" width="128"/> | Arch Linux  | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Debian-OpenLogo.svg" width="64"/> | Debian      | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Fedora_logo.svg" width="64"/> | Fedora      | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Gentoo_Linux_logo_matte.svg" width="64"/> | Gentoo      | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Linux_Mint_logo_without_wordmark.svg" width="64"/> | Linux Mint  | ✅ Working *(Use Ubuntu kernel)*            |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/OpenSUSE_Logo.svg" width="64"/> | OpenSUSE    | ✅ Working *(Only if SELinux is disabled)*  |
+| <img src="https://www.pngkit.com/png/full/659-6591257_2000px-slackware-logo-svg1.png" width="64"/> | Slackware   | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/7/76/Ubuntu-logo-2022.svg" width="128"/> | Ubuntu      | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/0/02/Void_Linux_logo.svg" width="64"/> | Void Linux  | ✅ Working                                  |
 
-### WE NOW HAVE PREBUILT KERNELS FOR TESTING!!!
+
+### WE HAVE PREBUILT KERNELS FOR TESTING!!!
 #### Please check the release tab for the specific kernel of your choosing.
+#### All kernel builds tested in a VM install.
 
 - If you like the work I do here, and want to donate to me/the project, checkout the [DONATIONS.MD](https://github.com/ETJAKEOC/TKT/blob/main/DOCS/DONATIONS.md) file.
 - Please checkout the [CONTRIBUTIONS_GUIDELINE.MD](https://github.com/ETJAKEOC/TKT/blob/main/DOCS/CONTRIBUTION_GUIDELINE.md) file for information about collaboration or how to help the project in general.
@@ -84,7 +89,7 @@ For all the supported linux distributions, `TKT` has to be cloned with `git`. Si
 
 #### Arch & derivatives
 ```shell
-git clone https://github.com/ETJAKEOC/TKT.git
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
 cd TKT
 # Optional: edit the "customization.cfg" file
 makepkg -si
@@ -95,30 +100,38 @@ The script will use a slightly modified Arch config from the `TKT-config` folder
 
 
 #### DEB (Debian, Ubuntu and derivatives) and RPM (Fedora, SUSE and derivatives) based distributions
-
-**Important notes:**
-An issue has been reported for Ubuntu where the stock kernel cannot boot properly any longer, the whereabouts are not entirely clear (only a single user reported that, see https://github.com/Frogging-Family/linux-tkg/issues/436).
-
-The interactive `install.sh` script will create, depending on the selected distro, `.deb` or `.rpm` packages, move them in the the subfolder `DEBS` or `RPMS` then prompts to install them with the distro's package manager.
+The interactive `install.sh` script will create, depending on the selected distro, `.deb` or `.rpm` packages, move them in the the subfolder `<kver>-tkt-<deb-distro>-*/*.deb` or `<kver>-tkt-<rpm-distro>-*/*.rpm` then prompts to install them with the distro's package manager.
 ```shell
-git clone https://github.com/ETJAKEOC/TKT.git
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
 cd TKT
 # Optional: edit the "customization.cfg" file
 ./install.sh install
 ```
-Uninstalling custom kernels installed through the script has to be done
-manually. `install.sh` can can help out with some useful information:
-```shell
-cd path/to/TKT
-./install.sh uninstall-help
-```
-The script will use a slightly modified Arch config from the `config` folder, it can be changed through the `_configfile` variable in `customization.cfg`.
-
 
 #### Gentoo
-The interactive `install.sh` script supports Slackware by following similar steps to `Generic`, providing you with `SLACKPKGS/*.txz` packages for install convenience.
+The interactive `install.sh` script supports Gentoo by following the same procedure as `Generic`, symlinks the sources folder in `/usr/src/` to `/usr/src/linux`, then offers to do an `emerge @module-rebuild` for convenience
 ```shell
-git clone https://github.com/ETJAKEOC/TKT.git
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
+cd TKT
+# Optional: edit the "customization.cfg" file
+./install.sh install
+```
+**Note:** If you're running openrc, you'll want to set `_configfile="running-kernel"` to use your current kernel's defconfig instead of Arch's. Else the resulting kernel won't boot.
+
+#### Slackware
+The interactive `install.sh` script supports Slackware by following similar steps to `Generic`, providing you with `<kver>-tkt-slackware-*>/*.txz` packages for install convenience.
+```shell
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
+cd TKT
+# Optional: edit the "customization.cfg" file
+./install.sh install
+sudo installpkg SLACKPKGS/*.txz
+```
+
+#### Void
+The interactive `install.sh` script supports Void by following similar steps to `Generic`, providing you with `<kver>-tkt-void-*/*.xbps` packages for install convenience.
+```shell
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
 cd TKT
 # Optional: edit the "customization.cfg" file
 ./install.sh install
@@ -128,7 +141,7 @@ sudo installpkg SLACKPKGS/*.txz
 #### Generic install
 The interactive `install.sh` script can be used to perform a "Generic" install by choosing `Generic` when prompted. It git clones the kernel tree in the `linux-src-git` folder, patches the code and edits a `.config` file in it. The commands to do are the following:
 ```shell
-git clone https://github.com/ETJAKEOC/TKT.git
+git clone --depth 1 https://github.com/ETJAKEOC/TKT.git
 cd TKT
 # Optional: edit the "customization.cfg" file
 ./install.sh install
@@ -143,6 +156,14 @@ sudo dracut --force --hostonly --kver $_kernelname $_dracut_options
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 **Notes:**
+Uninstalling custom kernels installed through the script has to be done
+manually. `install.sh` can can help out with some useful information:
+```shell
+cd path/to/TKT
+./install.sh uninstall-help
+```
+The script will use a slightly modified Arch config from the `config` folder, it can be changed through the `_configfile` variable in `customization.cfg`.
+
 - All the needed dependencies to patch, configure, compile or install the kernel are expected to be installed by the user beforehand.
 - If you only want the script to patch the sources in `linux-src-git`, you can use `./install.sh config`
 - `${kernel_flavor}` is a default naming scheme but can be customized with the variable `_kernel_localversion` in `customization.cfg`.
@@ -150,18 +171,6 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 - `_libunwind_replace` is a variable that can be changed in `customization.cfg` for replacing `libunwind` with `llvm-libunwind`.
 - The script uses Arch's `.config` file as a base. A custom one can be provided through `_configfile` in `customization.cfg`.
 - The installed files will not be tracked by your package manager and uninstalling requires manual intervention. `./install.sh uninstall-help` can help with useful information if your install procedure follows the `Generic` approach.
-
-
-#### Gentoo
-The interactive `install.sh` script supports Gentoo by following the same procedure as `Generic`, symlinks the sources folder in `/usr/src/` to `/usr/src/linux`, then offers to do an `emerge @module-rebuild` for convenience
-```shell
-git clone https://github.com/ETJAKEOC/TKT.git
-cd TKT
-# Optional: edit the "customization.cfg" file
-./install.sh install
-```
-**Note:** If you're running openrc, you'll want to set `_configfile="running-kernel"` to use your current kernel's defconfig instead of Arch's. Else the resulting kernel won't boot.
-
 
 #### Included script!!!
 You may notice a random script file in this repository called `initramfs-and-grub-update.sh`. This script *should* provide you with the most basic setup to recompile your initramfs, and resetup the GRUB2 bootmenu after compiling your kernel.

@@ -51,8 +51,8 @@ _git_remote_names=( "${!_kernel_git_remotes[@]}" )
 
 # fill with kernel.org link if empty
 if [[ -z "$_git_mirror" ]]; then
-  msg2 "using default kernel.org git remote"
-  _git_mirror="${_kernel_git_remotes['kernel.org']}"
+  msg2 "using default GregKH git remote"
+  _git_mirror="${_kernel_git_remotes['gregkh']}"
 fi
 
 # if alias, get actual link from map _kernel_git_remotes
@@ -244,8 +244,8 @@ _set_kver_internal_vars() {
   # examples: "600", "515", "504" we use this variable to have proper comparisons
   _kver="$VERSION$PATCHLEVEL"
 
-  if [ $_kver -le 605 ]; then
-    # chosen kernel <= 6.5
+  if [[ $_kver == "601" ]]; then
+    # chosen kernel <= 6.1
     _default_cpu_sched="cfs"
   else
     # chosen kernel >= 6.6
@@ -313,7 +313,7 @@ _set_kernel_version() {
 
     _kernel_git_tag="$_selected_value"
   fi
-  printf "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/TKT_CONFIG
+  echo "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/TKT_CONFIG
 }
 
 _set_cpu_scheduler() {
@@ -392,6 +392,8 @@ _set_compiler(){
   fi
 
   if [ "$_compiler" = "llvm" ]; then
+    export KCPPFLAGS
+    export KCFLAGS
     _compiler_name="-llvm"
     compiler_opt="CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=${_llvm_ias:-0}"
 
@@ -446,6 +448,8 @@ _set_compiler(){
     fi
 
   else # GCC fallback
+    export KCPPFLAGS
+    export KCFLAGS
     _compiler_name="-gcc"
     compiler_opt="CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip"
   fi
@@ -459,13 +463,14 @@ _define_kernel_abs_paths() {
   if [[ "$_kernel_work_folder" == /* ]]; then
     _kernel_work_folder_abs="$_kernel_work_folder/TKT/linux-src-git"
   fi
-  echo "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where/TKT_CONFIG"
 
   _kernel_source_folder_abs="$_where/$_kernel_source_folder/linux-kernel.git"
   if [[ "$_kernel_source_folder" == /* ]]; then
     _kernel_source_folder_abs="$_kernel_source_folder/TKT/linux-kernel.git"
   fi
-  echo "_kernel_work_folder_abs=\"$_kernel_work_folder_abs\"" >> "$_where/TKT_CONFIG"
+
+  echo _kernel_work_folder_abs="$_kernel_work_folder_abs" >> "$_where/TKT_CONFIG"
+  echo _kernel_source_folder_abs="$_kernel_source_folder_abs" >> "$_where/TKT_CONFIG"
 
 }
 
@@ -644,7 +649,7 @@ _tkg_srcprep() {
 
   cd "$_kernel_work_folder_abs"
 
-  if (( "$_kver" <= 602 )); then
+  if [ "$_kver" = "601" ]; then
     msg2 "Setting version..."
     scripts/setlocalversion --save-scmversion
   fi
@@ -719,12 +724,20 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _msg="Applying glitched base non-rt additions patch" && _tkg_patcher
   fi
 
-  tkgpatch="$srcdir/0013-fedora-rpm.patch"
-  _msg="RPM: fixing spec generator" && _tkg_patcher
-
-  if [[ "$_STRIP" == "true" ]]; then
-    tkgpatch="$srcdir/0013-fedora-strip-modules.patch"
-    _msg="RPM: strip modules" && _tkg_patcher
+  if [ "$_distro" = "Fedora" ]; then
+    tkgpatch="$srcdir/0013-fedora-rpm.patch"
+    _msg="RPM: fixing spec generator" && _tkg_patcher
+    if [[ "$_STRIP" == "true" ]]; then
+      tkgpatch="$srcdir/0013-fedora-strip-modules.patch"
+      _msg="RPM: strip modules" && _tkg_patcher
+    fi
+  elif [ "$_distro" = "Suse" ]; then
+    tkgpatch="$srcdir/0013-suse-rpm.patch"
+    _msg="RPM: fixing spec generator" && _tkg_patcher
+    if [[ "$_STRIP" == "true" ]]; then
+      tkgpatch="$srcdir/0013-suse-strip-modules.patch"
+      _msg="RPM: strip modules" && _tkg_patcher
+    fi
   fi
 
   if [ "$_distro" = "Suse" ]; then
@@ -936,12 +949,12 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
     _disable "GENTOO_KERNEL_SELF_PROTECTION"
   fi
 
-  # Prevent Debian and Ubuntu to sign stuff because it breaks stuff
-  if [[ "$_distro" = "Debian" || "$_distro" = "Ubuntu" ]]; then
+  # Prevent Debian, Mint, and Ubuntu to sign stuff because it breaks stuff
+  if [[ "$_distro" = "Debian"  || "$_distro" = "Mint"  || "$_distro" = "Ubuntu" ]]; then
     #Help Debian cert compile problem.
     scripts/config --set-str "SYSTEM_TRUSTED_KEYS" ""
     if [[ $_kver -lt 612 ]]; then # note: 6.12 removed MODULE_COMPRESS_NONE
-      #Debian/Ubuntu don't properly support zstd module compression
+      #Debian/Mint/Ubuntu don't properly support zstd module compression
       _disable "MODULE_COMPRESS_ZSTD"
       _enable "MODULE_COMPRESS_NONE"
     fi
@@ -1774,6 +1787,7 @@ exit_cleanup() {
   rm -f "$_where"/*.hook
   rm -f "$_where"/cleanup
   rm -f "$_where"/prepare
+  rm -f "$_where"minimal_modprobed.db
 
   # Remove state tracker
   rm -f "$_where"/TKT_CONFIG

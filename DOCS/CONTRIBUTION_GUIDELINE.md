@@ -36,15 +36,10 @@ All the detailed steps—including how to install and set up modprobed-db, gener
 Below is a checklist of platform-specific compile goals for this project. These represent both completed and planned features, and will help contributors and users see where the project is headed.
 
 ```
-- [x] **Arch:** Complete GHCI build and patch set.
-- [x] **Debian:** Complete GHCI build and patch set.
-- [x] **Fedora:** Complete GHCI build and patch set.
+- [ ] **Work on patches:** For all kernel versions, bring in more from other providers.
 - [ ] **Gentoo (OpenRC):** Complete GHCI build and patch set.
 - [ ] **Gentoo (SystemD):** Complete GHCI build and patch set.
 - [ ] **Pop!_OS:** Complete GHCI build and patch set.
-- [x] **Slackware:** Complete GHCI build and patch set.
-- [x] **SUSE:** Complete GHCI build and patch set.
-- [x] **Ubuntu:** Complete GHCI build and patch set.
 ```
 
 If you are interested in contributing to this project, please, feel free to fork it, and do some work.
