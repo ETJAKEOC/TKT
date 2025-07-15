@@ -30,7 +30,7 @@ _where="$PWD"
 # Create logs dir if it does not already exist.
 [ -d "$_where/logs" ] || mkdir -p "$_where/logs"
 
-# Create TKT_CONFIG only on first run and save in it all settings
+# Clear TKT_CONFIG and save all settings in it fresh again
 if [ ! -e "$_where"/TKT_CONFIG ]; then
 
   cp "$_where"/customization.cfg "$_where"/TKT_CONFIG
@@ -78,11 +78,8 @@ export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EP
 prepare() {
   source "$_where"/TKT_CONFIG
   source "$_where"/kconfigs/prepare
-
   rm -rf $pkgdir # Nuke the entire pkg folder so it'll get regenerated clean on next build
-
-  ln -s "${_kernel_work_folder_abs}" "${srcdir}"
-
+  ln -s "${_kernel_work_folder_abs}" "${srcdir}/linux-src-git"
   _tkg_srcprep
 }
 
@@ -92,7 +89,7 @@ build() {
   cd "$_kernel_work_folder_abs"
 
   # Use custom compiler paths if defined
-  if [ "$_compiler_name" = "-llvm" ] && [ -n "${CUSTOM_LLVM_PATH}" ]; then
+  if [[ "$_compiler_name" =~ llvm ]] && [ -n "${CUSTOM_LLVM_PATH}" ]; then
     PATH="${CUSTOM_LLVM_PATH}/bin:${CUSTOM_LLVM_PATH}/lib:${CUSTOM_LLVM_PATH}/include:${PATH}"
   elif [ -n "${CUSTOM_GCC_PATH}" ]; then
     PATH="${CUSTOM_GCC_PATH}/bin:${CUSTOM_GCC_PATH}/lib:${CUSTOM_GCC_PATH}/include:${PATH}"
@@ -136,10 +133,10 @@ build() {
     export KCFLAGS
 
   # Setup "llvm_opts" if compiling using clang
-  if [ "$_compiler_name" = "-llvm" ]; then
+  if [[ "$_compiler_name" =~ llvm ]]; then
     time (CC=clang CPP=clang-cpp CXX=clang++ LD=ld.lld RANLIB=llvm-ranlib STRIP=llvm-strip AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump LLVM=1 LLVM_IAS=1 \
     make ${_force_all_threads} ${llvm_opt} bzImage modules 2>&1 ) 3>&1 1>&2 2>&3
-  elif [ "$_compiler_name" = "-gcc" ]; then
+  elif [[ "$_compiler_name" =~ gcc ]]; then
     time (CC=gcc CXX=g++ LD=ld.bfd HOSTCC=gcc HOSTLD=ld.bfd AR=ar NM=nm OBJCOPY=objcopy OBJDUMP=objdump READELF=readelf RANLIB=ranlib STRIP=strip \
     make ${_force_all_threads} bzImage modules 2>&1 ) 3>&1 1>&2 2>&3
   fi
@@ -294,16 +291,29 @@ hackheaders() {
   msg2 "Stripping build tools..."
   local file
   while read -rd '' file; do
-    case "$(file -Sib "$file")" in
-      application/x-sharedlib\;*)      # Libraries (.so)
-        strip -v $STRIP_SHARED "$file" ;;
-      application/x-archive\;*)        # Libraries (.a)
-        strip -v $STRIP_STATIC "$file" ;;
-      application/x-executable\;*)     # Binaries
-        strip -v $STRIP_BINARIES "$file" ;;
-      application/x-pie-executable\;*) # Relocatable binaries
-        strip -v $STRIP_SHARED "$file" ;;
-    esac
+    if [[ "$_compiler_name" =~ llvm ]]; then
+      case "$(file -Sib "$file")" in
+        application/x-sharedlib\;*)      # Libraries (.so)
+          strip --strip-all-gnu $STRIP_SHARED "$file" ;;
+        application/x-archive\;*)        # Libraries (.a)
+          strip --strip-all-gnu $STRIP_STATIC "$file" ;;
+        application/x-executable\;*)     # Binaries
+          strip --strip-all-gnu $STRIP_BINARIES "$file" ;;
+        application/x-pie-executable\;*) # Relocatable binaries
+          strip --strip-all-gnu $STRIP_SHARED "$file" ;;
+      esac
+    elif [[ "$_compiler_name" =~ gcc ]]; then
+      case "$(file -Sib "$file")" in
+        application/x-sharedlib\;*)      # Libraries (.so)
+          strip --strip-all $STRIP_SHARED "$file" ;;
+        application/x-archive\;*)        # Libraries (.a)
+          strip --strip-all $STRIP_STATIC "$file" ;;
+        application/x-executable\;*)     # Binaries
+          strip --strip-all $STRIP_BINARIES "$file" ;;
+        application/x-pie-executable\;*) # Relocatable binaries
+          strip --strip-all $STRIP_SHARED "$file" ;;
+      esac
+    fi
   done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
 
   msg2 "Adding symlink..."
@@ -311,8 +321,13 @@ hackheaders() {
   ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
 
   if [ "$_STRIP" = "true" ]; then
-    echo "Stripping vmlinux..."
-    strip -v $STRIP_STATIC "$builddir/vmlinux"
+    if [[ "$_compiler_name" =~ llvm ]]; then
+      echo "Stripping vmlinux..."
+      strip --strip-all-gnu $STRIP_STATIC "$builddir/vmlinux"
+    elif [[ "$_compiler_name" =~ gcc ]]; then
+      echo "Stripping vmlinux..."
+      strip --strip-all $STRIP_STATIC "$builddir/vmlinux"
+    fi
   fi
 
   if [ "$_NUKR" = "true" ]; then

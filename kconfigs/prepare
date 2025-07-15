@@ -313,7 +313,7 @@ _set_kernel_version() {
 
     _kernel_git_tag="$_selected_value"
   fi
-  printf "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/TKT_CONFIG
+  echo "_kernel_git_tag='$_kernel_git_tag'" >> "$_where"/TKT_CONFIG
 }
 
 _set_cpu_scheduler() {
@@ -459,13 +459,14 @@ _define_kernel_abs_paths() {
   if [[ "$_kernel_work_folder" == /* ]]; then
     _kernel_work_folder_abs="$_kernel_work_folder/TKT/linux-src-git"
   fi
-  echo "_kernel_work_folder_abs="$_kernel_work_folder_abs" >> "$_where/TKT_CONFIG"
 
   _kernel_source_folder_abs="$_where/$_kernel_source_folder/linux-kernel.git"
   if [[ "$_kernel_source_folder" == /* ]]; then
     _kernel_source_folder_abs="$_kernel_source_folder/TKT/linux-kernel.git"
   fi
-  echo "_kernel_source_folder_abs="$_kernel_work_folder_abs" >> "$_where/TKT_CONFIG"
+
+  echo _kernel_work_folder_abs="$_kernel_work_folder_abs" >> "$_where/TKT_CONFIG"
+  echo _kernel_source_folder_abs="$_kernel_source_folder_abs" >> "$_where/TKT_CONFIG"
 
 }
 
@@ -1785,7 +1786,7 @@ exit_cleanup() {
   rm -f "$_where"minimal_modprobed.db
 
   # Remove state tracker
-  rm -f "$_where"/TKT_CONFIG
+#  rm -f "$_where"/TKT_CONFIG
 
   # Remove ntsync rules file
   rm -f "$_where"/ntsync.rules
