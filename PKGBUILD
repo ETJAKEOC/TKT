@@ -143,7 +143,6 @@ build() {
     return 0
   )
 }
-
 hackbase() {
   source "$_where"/TKT_CONFIG
 
@@ -165,13 +164,12 @@ hackbase() {
 
   cd "$_kernel_work_folder_abs"
 
-  # get kernel version
+  # Get kernel version
   local _kernver="$(<version)"
   local modulesdir="$pkgdir/usr/lib/modules/$_kernver"
 
   msg2 "Installing boot image..."
-  # systemd expects to find the kernel here to allow hibernation
-  # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
+  # Systemd expects to find the kernel here to allow hibernation
   install -Dm644 "$(make ${llvm_opt} -s image_name)" "$modulesdir/vmlinuz"
 
   # Used by mkinitcpio to name the kernel
@@ -185,38 +183,82 @@ hackbase() {
   ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" $_STRIP_MODS \
     DEPMOD=/doesnt/exist modules_install  # Suppress depmod
 
-  # remove build and source links
+  # Remove build and source links
   rm -f "$modulesdir"/{source,build}
 
-  # install cleanup pacman hook and script
+  # Install cleanup pacman hook and script
   sed -e "s|cleanup|${pkgbase}-cleanup|g" "${srcdir}"/90-cleanup.hook |
     install -Dm644 /dev/stdin "${pkgdir}/usr/share/libalpm/hooks/90-${pkgbase}.hook"
   install -Dm755 "${srcdir}"/cleanup "${pkgdir}/usr/share/libalpm/scripts/${pkgbase}-cleanup"
 
-  # install customization file, for reference
+  # Install customization file, for reference
   install -Dm644 "${srcdir}"/customization-full.cfg "${pkgdir}/usr/share/doc/${pkgbase}/customization.cfg"
 
   # ntsync
   if [ -e "${srcdir}/ntsync.conf" ]; then
-    # workaround for missing header on <6.14 with ntsync
+    # Workaround for missing header on <6.14 with ntsync
     if [ $_basever -lt 614 ]; then
       if [ -e "${_kernel_work_folder_abs}/include/uapi/linux/ntsync.h" ] && [ ! -e "/usr/include/linux/ntsync.h" ]; then
         msg2 "Workaround missing ntsync header"
         install -Dm644 "${_kernel_work_folder_abs}"/include/uapi/linux/ntsync.h "${pkgdir}/usr/include/linux/ntsync.h"
       fi
     fi
-    # load ntsync module at boot
+    # Load ntsync module at boot
     msg2 "Set the ntsync module to be loaded at boot through /etc/modules-load.d"
     install -Dm644 "${srcdir}"/ntsync.conf "${pkgdir}/etc/modules-load.d/ntsync-${pkgbase}.conf"
   fi
 
-  # install udev rule for ntsync if needed (<6.14)
+  # Install udev rule for ntsync if needed (<6.14)
   if [ -e "${srcdir}/ntsync.rules" ]; then
     msg2 "Installing udev rule for ntsync"
     install -Dm644 "${srcdir}"/ntsync.rules "${pkgdir}/etc/udev/rules.d/ntsync.rules"
   fi
-}
 
+  # Check if the installed kernel is a UKI and update mkinitcpio preset
+  msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
+  if _is_uki "$modulesdir/vmlinuz"; then
+    msg2 "Unified Kernel Image detected, updating mkinitcpio preset..."
+    
+    # Create or update the mkinitcpio preset file
+    local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
+    mkdir -p "${pkgdir}/etc/mkinitcpio.d"
+    
+    # Write a UKI-compatible preset
+    cat > "$preset_file" <<EOF
+# mkinitcpio preset file for ${pkgbase} (UKI configuration)
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="${_kernver}"
+PRESETS=('default')
+
+default_image="/boot/${pkgbase}.efi"
+default_uki="/boot/${pkgbase}.efi"
+default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+EOF
+
+    msg2 "Updated mkinitcpio preset file at ${preset_file} for UKI"
+  else
+    msg2 "No Unified Kernel Image detected, using standard preset configuration..."
+    
+    # Create a standard preset file (if needed)
+    local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
+    mkdir -p "${pkgdir}/etc/mkinitcpio.d"
+    
+    cat > "$preset_file" <<EOF
+# mkinitcpio preset file for ${pkgbase}
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="${_kernver}"
+PRESETS=('default')
+
+default_image="/boot/vmlinuz-${pkgbase}"
+default_initramfs="/boot/initramfs-${pkgbase}.img"
+default_options=""
+EOF
+
+    msg2 "Created standard mkinitcpio preset file at ${preset_file}"
+  fi
+}
 hackheaders() {
   source "$_where"/TKT_CONFIG
 
