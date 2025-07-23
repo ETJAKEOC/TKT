@@ -2,7 +2,7 @@
 
 ## INTRODUCTION:
 
-Welcome to TKT (The Kernel Toolkit). Here we will learn about the basics of setting up and using the TKT kernel install script. Most options in this guide that we will cover will have their own descriptions inside the `customization.cfg` file, this just covers the basics and tries to explain them. For a more in depth explanation of an option, please refer to the original file, or do a search online about it.
+Welcome to TꓘT (The ꓘernel Toolkit). Here we will learn about the basics of setting up and using the TꓘT kernel install script. Most options in this guide that we will cover will have their own descriptions inside the `customization.cfg` file, this just covers the basics and tries to explain them. For a more in depth explanation of an option, please refer to the original file, or do a search online about it.
 
 Depending on the OS you`re running depends on how you will install this package.
 
@@ -99,7 +99,7 @@ The last option of the kernel options it the Intel Clear Linux patches toggle. T
 
 ## Are we done yet???
 
-Oh no, we still have a few more options to go through, this is what makes the TKT kernel project such an amazing tool, the level of customization that you have out of the box is amazing.
+Oh no, we still have a few more options to go through, this is what makes the TꓘT kernel project such an amazing tool, the level of customization that you have out of the box is amazing.
 
 Now we reach the "SPESHUL OPTIONS" which you may or may not be interested in, you can safely skip these if you want to, but I recommend giving the descriptions a read to see what they do.
 
@@ -115,7 +115,7 @@ The final four options of the file, here we go, let's wrap up with this `customi
 
 ## It`s finally install time:
 
-Wow, that was a lot, but let's save our file, and now, we have a fully automated installation of the TKT kernel, no more questions asked every time we compile. Now comes the fun part, it`s time to take all this hard work and compile the kernel. The directions take a small divergence, but then recombine back down the same path (for the most part).
+Wow, that was a lot, but let's save our file, and now, we have a fully automated installation of the TꓘT kernel, no more questions asked every time we compile. Now comes the fun part, it`s time to take all this hard work and compile the kernel. The directions take a small divergence, but then recombine back down the same path (for the most part).
 
 ## ARCH USERS:
 
@@ -135,8 +135,8 @@ Depending on the system, you will get `.deb`, `.rpm`, or a generic kernel packag
 
 ## CONCLUSION:
 
-This is a crash course guide to get you comfortable working with the TKT kernel, and should for the most part, get you to a working kernel build. This is by no means a full on official step by step guide of how to compile a kernel, the TKT way or the standard Linux way. This is a project that I (ETJAKEOC) have taken my time to generate in order to help me bring more users to the same project that brings me great joy using my computer. I have noticed many performance boosts using the TKT kernel over the stock kernel on my machines, and love the install script and it`s options. This is why I forked it and wrote up this guide to go alongside it, in an attempt to encourage others to play with their kernels, and show that that it is not a scary place to work in.
+This is a crash course guide to get you comfortable working with the TꓘT kernel, and should for the most part, get you to a working kernel build. This is by no means a full on official step by step guide of how to compile a kernel, the TꓘT way or the standard Linux way. This is a project that I (ETJAKEOC) have taken my time to generate in order to help me bring more users to the same project that brings me great joy using my computer. I have noticed many performance boosts using the TꓘT kernel over the stock kernel on my machines, and love the install script and it`s options. This is why I forked it and wrote up this guide to go alongside it, in an attempt to encourage others to play with their kernels, and show that that it is not a scary place to work in.
 
 ## SUPPORT:
 
-Support results may vary. Keep in mind at the end of the day, I am not a developer, let alone a kernel developer. I am just some guy who can read files, understand things, and experiment. The choices I have made for my defaults may not always work for you, when in doubt, go with the default recommended in the `customization.cfg` file. If all else has failed, you can find me on [The Linux Cast Discord server](https://discord.gg/KHckz5RTJs). Please feel free to join us, start a #tech-support thread, and tag me (ETJAKEOC) in the thread, I will be along to assist you when I can.
+If all else has failed, you can find us at our [The ꓘernel Toolkit](https://discord.gg/c9h5Ganv) Official Discord Server. Please feel free to join us, and someone will be along to assist you when they can.

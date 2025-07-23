@@ -175,3 +175,8 @@ The script will use a slightly modified Arch config from the `config` folder, it
 #### Included script!!!
 You may notice a random script file in this repository called `initramfs-and-grub-update.sh`. This script *should* provide you with the most basic setup to recompile your initramfs, and resetup the GRUB2 bootmenu after compiling your kernel.
 This has not been tested on all systems, results may vary, you may have to adapt to fit your system.
+
+#### Support
+
+If all else has failed, you can find us at our [The ꓘernel Toolkit](https://discord.gg/c9h5Ganv) Official Discord Server.
+Please feel free to join us, and someone will be along to assist you when they can.
