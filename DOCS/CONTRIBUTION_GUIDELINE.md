@@ -20,7 +20,7 @@ this will help us to debug any issues that may arise from our tunings, and we ca
 
 ### Contribute Your Kernel Module Data
 
-Want to help improve hardware coverage for the TKT project? You can contribute your system’s kernel module data using one of two preferred methods.
+Want to help improve hardware coverage for the TꓘT project? You can contribute your system’s kernel module data using one of two preferred methods.
 ## Quick Overview
 # Option 1: lsmod (quick + easy)
 
@@ -44,7 +44,7 @@ Below is a checklist of platform-specific compile goals for this project. These 
 
 If you are interested in contributing to this project, please, feel free to fork it, and do some work.
 
-You can contact me on Discord @ETJAKEOC
+You can contact the TꓘT team at our [Official Discord Server](https://discord.gg/c9h5Ganv)
 
 Thank you for taking the time to read this, and I hope you enjoy the work.
 
