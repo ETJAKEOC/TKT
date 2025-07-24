@@ -13,7 +13,11 @@
 | <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Linux_Mint_logo_without_wordmark.svg" width="64"/> | Linux Mint  | ✅ Working *(Use Ubuntu kernel)*            |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/OpenSUSE_Logo.svg" width="64"/> | OpenSUSE    | ✅ Working *(Only if SELinux is disabled)*  |
 <<<<<<< HEAD
+<<<<<<< HEAD
 | <img src="https://upload.wikimedia.org/wikipedia/commons/1/11/Faenza-distributor-logo-slackware.svg" width="64"/> | Slackware   | ✅ Working                                  |
+=======
+| <img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Slackware_logo.svg" width="64"/> | Slackware   | ✅ Working                                  |
+>>>>>>> 20cfbe92970a01f3544f6c11844b0ae9a31e515f
 =======
 | <img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Slackware_logo.svg" width="64"/> | Slackware   | ✅ Working                                  |
 >>>>>>> 20cfbe92970a01f3544f6c11844b0ae9a31e515f
