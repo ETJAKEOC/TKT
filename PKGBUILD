@@ -214,6 +214,15 @@ hackbase() {
     install -Dm644 "${srcdir}"/ntsync.rules "${pkgdir}/etc/udev/rules.d/ntsync.rules"
   fi
 
+   # Helper function to check if the kernel image is a UKI
+_is_uki() {
+  local kernel_image="$1"
+  # Check if the file is an EFI executable (UKI typically is)
+  if [[ -f "$kernel_image" ]] && file "$kernel_image" | grep -q "PE32\+ executable (EFI application)"; then
+    return 0 # UKI detected
+  fi
+  return 1 # Not a UKI
+}
   # Check if the installed kernel is a UKI and update mkinitcpio preset
   msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
   if _is_uki "$modulesdir/vmlinuz"; then
