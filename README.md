@@ -6,15 +6,15 @@
 #### Tested distro's so far;
 | Logo | Distro      | Status                                     |
 |------|-------------|--------------------------------------------|
-| <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Archlinux-logo-standard-version.svg" width="128"/> | Arch Linux  | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Debian-OpenLogo.svg" width="64"/> | Debian      | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Fedora_logo.svg" width="64"/> | Fedora      | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Gentoo_Linux_logo_matte.svg" width="64"/> | Gentoo      | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Linux_Mint_logo_without_wordmark.svg" width="64"/> | Linux Mint  | ✅ Working *(Use Ubuntu kernel)*            |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/OpenSUSE_Logo.svg" width="64"/> | OpenSUSE    | ✅ Working *(Only if SELinux is disabled)*  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Slackware_logo.svg" width="64"/> | Slackware   | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/7/76/Ubuntu-logo-2022.svg" width="128"/> | Ubuntu      | ✅ Working                                  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/0/02/Void_Linux_logo.svg" width="64"/> | Void Linux  | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Arch.svg" width="128"/> | Arch Linux  | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Debian.svg" width="64"/> | Debian      | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Fedora.svg" width="64"/> | Fedora      | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Gentoo.svg" width="64"/> | Gentoo      | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Mint.svg" width="64"/> | Linux Mint  | ✅ Working *(Use Ubuntu kernel)*            |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/SUSE.svg" width="64"/> | OpenSUSE    | ✅ Working *(Only if SELinux is disabled)*  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Slackware.svg" width="64"/> | Slackware   | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Ubuntu.svg" width="128"/> | Ubuntu      | ✅ Working                                  |
+| <img src="https://github.com/ETJAKEOC/TKT/raw/refs/heads/main/.github/images/Void.svg" width="64"/> | Void Linux  | ✅ Working                                  |
 
 ### WE HAVE PREBUILT KERNELS FOR TESTING!!!
 #### Please check the release tab for the specific kernel of your choosing.
