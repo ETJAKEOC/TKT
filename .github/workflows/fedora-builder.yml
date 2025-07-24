@@ -28,7 +28,7 @@ jobs:
       compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
-    container: fedora:latest
+    container: ghcr.io/etjakeoc/tkt-fedora-dev:latest
 
     steps:
       - name: Install dependencies and cleanup

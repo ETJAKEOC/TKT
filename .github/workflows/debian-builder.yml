@@ -27,7 +27,7 @@ jobs:
       _cpusched: ${{ inputs._cpusched }}
       compiler: ${{ inputs.compiler }}
     runs-on: ubuntu-latest
-    container: debian:sid
+    container: ghcr.io/etjakeoc/tkt-debian-dev:latest
 
     steps:
       - name: Install dependencies and cleanup

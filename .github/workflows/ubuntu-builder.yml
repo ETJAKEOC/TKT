@@ -28,6 +28,7 @@ jobs:
       compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
+    container: ghcr.io/etjakeoc/tkt-ubuntu-dev:latest
 
     steps:
       - name: Install dependencies and cleanup
@@ -63,9 +64,7 @@ jobs:
           fi
           sed -i 's/^_distro=".*"/_distro="Ubuntu"/' customization.cfg
           sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
-          set +o pipefail
           yes '' | ./install.sh install || true
-          set -o pipefail
 
       - name: Cleanup useless DEB files
         run: rm -rf DEBS/*dbg*.deb DEBS/*libc-dev*.deb

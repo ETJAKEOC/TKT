@@ -23,7 +23,7 @@ env:
 jobs:
   build-kernel:
     runs-on: ubuntu-latest
-    container: aclemons/slackware:current
+    container: ghcr.io/etjakeoc/tkt-slackware-dev:latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GIT_SSL_CAINFO: /etc/ssl/certs/ca-certificates.crt

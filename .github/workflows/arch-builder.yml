@@ -27,7 +27,7 @@ jobs:
       compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
-    container: archlinux:latest
+    container: ghcr.io/etjakeoc/tkt-arch-dev:latest
 
     steps:
       - name: Update mirrorlist

@@ -28,7 +28,7 @@ jobs:
       compiler: ${{ inputs.compiler }}
 
     runs-on: ubuntu-latest
-    container: opensuse/tumbleweed:latest
+    container: ghcr.io/etjakeoc/tkt-suse-dev:latest
 
     steps:
       - name: Add Python Modules repo and import GPG key
