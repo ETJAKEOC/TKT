@@ -843,6 +843,9 @@ echo "-${_custom_pkgbase}" > localversion.10-pkgrel
   if [ -z "${_configfile}" ]; then
     msg2 "Using archlinux's default config file for kernel ${_basekernel}"
     cat "${srcdir}"/config.x86_64 > ./.config
+  elif [ "${_configfile}" = "OpenRC" ]; then
+    msg2 "Using OpenRC config file for kernel ${_basekernel}"
+    cat "${srcdir}"/openrc-config.x86_64 > ./.config
   elif [ "${_configfile}" = "config_hardened.x86_64" ]; then
     msg2 "Using archlinux's hardened config file for kernel ${_basekernel}"
     cat "${srcdir}"/config_hardened.x86_64 > ./.config
