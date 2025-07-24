@@ -263,10 +263,12 @@ PRESETS=('default')
 default_image="/boot/vmlinuz-${pkgbase}"
 default_initramfs="/boot/initramfs-${pkgbase}.img"
 default_options=""
+EOF
 
     msg2 "Created standard mkinitcpio preset file at ${preset_file}"
   fi
 }
+
 hackheaders() {
   source "$_where"/TKT_CONFIG
 
