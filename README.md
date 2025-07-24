@@ -12,7 +12,7 @@
 | <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Gentoo_Linux_logo_matte.svg" width="64"/> | Gentoo      | ✅ Working                                  |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Linux_Mint_logo_without_wordmark.svg" width="64"/> | Linux Mint  | ✅ Working *(Use Ubuntu kernel)*            |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/OpenSUSE_Logo.svg" width="64"/> | OpenSUSE    | ✅ Working *(Only if SELinux is disabled)*  |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Slackware_web_logo.svg"/> | Slackware   | ✅ Working                                  |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Slackware_web_logo.svg" width="128"/> | Slackware   | ✅ Working                                  |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/7/76/Ubuntu-logo-2022.svg" width="128"/> | Ubuntu      | ✅ Working                                  |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/0/02/Void_Linux_logo.svg" width="64"/> | Void Linux  | ✅ Working                                  |
 
