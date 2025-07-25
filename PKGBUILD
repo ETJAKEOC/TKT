@@ -214,6 +214,7 @@ hackbase() {
     install -Dm644 "${srcdir}"/ntsync.rules "${pkgdir}/etc/udev/rules.d/ntsync.rules"
   fi
 }
+  {
   # Check if the installed kernel is a UKI and update mkinitcpio preset
   msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
   if _is_uki "$modulesdir/vmlinuz"; then
