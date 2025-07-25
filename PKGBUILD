@@ -213,15 +213,6 @@ hackbase() {
     msg2 "Installing udev rule for ntsync"
     install -Dm644 "${srcdir}"/ntsync.rules "${pkgdir}/etc/udev/rules.d/ntsync.rules"
   fi
-
-   # Helper function to check if the kernel image is a UKI
-_is_uki() {
-  local kernel_image="$1"
-  # Check if the file is an EFI executable (UKI typically is)
-  if [[ -f "$kernel_image" ]] && file "$kernel_image" | grep -q "PE32\+ executable (EFI application)"; then
-    return 0 # UKI detected
-  fi
-  return 1 # Not a UKI
 }
   # Check if the installed kernel is a UKI and update mkinitcpio preset
   msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
@@ -234,6 +225,7 @@ _is_uki() {
     
     # Write a UKI-compatible preset
     cat > "$preset_file" <<EOF
+
 # mkinitcpio preset file for ${pkgbase} (UKI configuration)
 
 ALL_config="/etc/mkinitcpio.conf"
@@ -263,7 +255,6 @@ default_image="/boot/vmlinuz-${pkgbase}"
 default_initramfs="/boot/initramfs-${pkgbase}.img"
 default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
 EOF
-
     msg2 "Created standard mkinitcpio preset file at ${preset_file}"
   fi
 }
