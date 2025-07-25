@@ -31,24 +31,6 @@ jobs:
     container: ghcr.io/etjakeoc/tkt-ubuntu-dev:latest
 
     steps:
-      - name: Install dependencies and cleanup
-        run: |
-          # Ensure all repo types are enabled
-          sudo sed -i 's/^# deb/deb/g' /etc/apt/sources.list
-          for file in /etc/apt/sources.list.d/*.list; do
-            sudo sed -i 's/^# deb/deb/g' "$file" || true
-          done
-
-          # Add all default Ubuntu repositories
-          sudo add-apt-repository main
-          sudo add-apt-repository universe
-          sudo add-apt-repository multiverse
-          sudo add-apt-repository restricted
-          echo "deb [trusted=yes] http://mirror.mit.edu/ubuntu plucky main universe multiverse restricted" | sudo tee /etc/apt/sources.list.d/plucky.list
-          sudo apt update
-          sudo apt install -y curl git
-          sudo rm -rf /var/cache/apt/archives/*
-
       - name: Checkout TKT
         uses: actions/checkout@v4
 

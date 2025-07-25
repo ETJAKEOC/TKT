@@ -31,11 +31,6 @@ jobs:
     container: ghcr.io/etjakeoc/tkt-fedora-dev:latest
 
     steps:
-      - name: Install dependencies and cleanup
-        run: |
-          yes '' | dnf upgrade --assumeyes
-          dnf install --assumeyes  --skip-unavailable curl git
-
       - name: Checkout TKT
         uses: actions/checkout@v4
 

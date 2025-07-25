@@ -31,19 +31,6 @@ jobs:
     container: ghcr.io/etjakeoc/tkt-suse-dev:latest
 
     steps:
-      - name: Add Python Modules repo and import GPG key
-        run: |
-          zypper --non-interactive addrepo --refresh \
-            https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Tumbleweed/devel:languages:python.repo || true
-          rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Tumbleweed/repodata/repomd.xml.key || true
-          zypper --gpg-auto-import-keys refresh
-
-      - name: Install dependencies
-        run: |
-          zypper refresh
-          zypper --non-interactive install awk curl git
-          zypper clean -a
-
       - name: Checkout TKT
         uses: actions/checkout@v4
 

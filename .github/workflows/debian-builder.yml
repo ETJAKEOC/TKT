@@ -30,21 +30,6 @@ jobs:
     container: ghcr.io/etjakeoc/tkt-debian-dev:latest
 
     steps:
-      - name: Install dependencies and cleanup
-        run: |
-          rm -rf /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian bookworm contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian bookworm-updates contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian bookworm-backports main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian bookworm-backports-sloppy main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian bookworm-proposed-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          echo "deb http://ftp.us.debian.org/debian sid main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/debian.list
-          apt update
-          apt-mark unhold libudev1 libudev-dev
-          apt upgrade -y
-          apt install -y --allow-downgrades curl git gnupg
-          apt clean
-
       - name: Checkout TKT
         uses: actions/checkout@v4
 

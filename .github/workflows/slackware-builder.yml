@@ -28,27 +28,6 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GIT_SSL_CAINFO: /etc/ssl/certs/ca-certificates.crt
     steps:
-
-      - name: Download and install latest ca-certificates from Slackware mirror
-        run: |
-          BASE_URL="http://mirrors.unixsol.org/slackware/slackware64-current/"
-          PKG_NAME=$(wget --no-check-certificate -q -O - "${BASE_URL}slackware64/n/" | grep -o 'ca-certificates-[0-9]\{8\}\.txz' | sort -r | head -n 1)
-          wget --no-check-certificate "${BASE_URL}GPG-KEY"
-          wget --no-check-certificate "${BASE_URL}ChangeLog.txt"
-          wget --no-check-certificate "${BASE_URL}slackware64/n/${PKG_NAME}"
-          echo "${BASE_URL}" > /etc/slackpkg/mirrors
-          installpkg "${PKG_NAME}"
-          yes | slackpkg update
-          echo "YES" | slackpkg update gpg
-          wget --no-check-certificate -O /etc/ssl/certs/ca-certificates.crt https://curl.se/ca/cacert.pem
-
-      - name: Install dependencies and clean-up
-        run: |
-          yes | slackpkg -batch=on -default_answer=y install bash bc bison ccache cmake cpio curl flex git kmod lz4 make patchutils perl python3 python3-pip \
-          rsync sudo tar time wget zstd binutils brotli cyrus-sasl diffutils dwarves elfutils fakeroot fakeroot-ng file gc gcc gcc-g++ gcc-gcobol gcc-gdc \
-          gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust glibc git guile gzip kernel-headers libedit libelf libxml2 lzop m4 ncurses nghttp2 nghttp3 \
-          openssl perl schedtool spirv-llvm-translator xxHash xz
-
       - name: Checkout TKT
         uses: actions/checkout@v4
 
