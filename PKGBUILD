@@ -250,7 +250,7 @@ EOF
 
 # mkinitcpio preset file for ${pkgbase}
 
-ALL_config="/etc/mkinitcpio.conf"
+    ALL_config="/etc/mkinitcpio.conf"
     ALL_kver="${_kernver}"
     PRESETS=('default')
     default_image="/boot/vmlinuz-${pkgbase}"
