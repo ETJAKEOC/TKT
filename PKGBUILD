@@ -230,12 +230,11 @@ hackbase() {
 # mkinitcpio preset file for ${pkgbase} (UKI configuration)
 
 ALL_config="/etc/mkinitcpio.conf"
-ALL_kver="${_kernver}"
-PRESETS=('default')
-
-default_image="/boot/EFI/${pkgbase}.efi"
-default_uki="/boot/EFI/${pkgbase}.efi"
-default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+    ALL_kver="${_kernver}"
+    PRESETS=('default')
+    default_image="/boot/EFI/${pkgbase}.efi"
+    default_uki="/boot/EFI/${pkgbase}.efi"
+    default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
 EOF
 
     msg2 "Updated mkinitcpio preset file at ${preset_file} for UKI"
@@ -247,14 +246,15 @@ EOF
     mkdir -p "${pkgdir}/etc/mkinitcpio.d"
     
     cat > "$preset_file" <<EOF
+
 # mkinitcpio preset file for ${pkgbase}
 
 ALL_config="/etc/mkinitcpio.conf"
-ALL_kver="${_kernver}"
-PRESETS=('default')
-default_image="/boot/vmlinuz-${pkgbase}"
-default_initramfs="/boot/initramfs-${pkgbase}.img"
-default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+    ALL_kver="${_kernver}"
+    PRESETS=('default')
+    default_image="/boot/vmlinuz-${pkgbase}"
+    default_initramfs="/boot/initramfs-${pkgbase}.img"
+    default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
 EOF
     msg2 "Created standard mkinitcpio preset file at ${preset_file}"
   fi
