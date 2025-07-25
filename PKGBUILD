@@ -216,25 +216,26 @@ hackbase() {
 }
   {
   # Check if the installed kernel is a UKI and update mkinitcpio preset
-  msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
-  if _is_uki "$modulesdir/vmlinuz"; then
+    msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
+      if _is_uki "$modulesdir/vmlinuz"; then
     msg2 "Unified Kernel Image detected, updating mkinitcpio preset..."
     
-    # Create or update the mkinitcpio preset file
-    local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
+  # Create or update the mkinitcpio preset file
+      local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
     mkdir -p "${pkgdir}/etc/mkinitcpio.d"
     
-    # Write a UKI-compatible preset
+  # Write a UKI-compatible preset
     cat > "$preset_file" <<EOF
 
-# mkinitcpio preset file for ${pkgbase} (UKI configuration)
+  # mkinitcpio preset file for ${pkgbase} (UKI configuration)
 
-ALL_config="/etc/mkinitcpio.conf"
-    ALL_kver="${_kernver}"
-    PRESETS=('default')
-    default_image="/boot/EFI/${pkgbase}.efi"
-    default_uki="/boot/EFI/${pkgbase}.efi"
-    default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+      ALL_config="/etc/mkinitcpio.conf"
+      ALL_kver="${_kernver}"
+      PRESETS=('default')
+      default_image="/boot/EFI/${pkgbase}.efi"
+      default_uki="/boot/EFI/${pkgbase}.efi"
+      default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+
 EOF
 
     msg2 "Updated mkinitcpio preset file at ${preset_file} for UKI"
@@ -243,7 +244,7 @@ EOF
     
     # Create a standard preset file (if needed)
     local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
-    mkdir -p "${pkgdir}/etc/mkinitcpio.d"
+       mkdir -p "${pkgdir}/etc/mkinitcpio.d"
     
     cat > "$preset_file" <<EOF
 
@@ -255,6 +256,7 @@ ALL_config="/etc/mkinitcpio.conf"
     default_image="/boot/vmlinuz-${pkgbase}"
     default_initramfs="/boot/initramfs-${pkgbase}.img"
     default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+
 EOF
     msg2 "Created standard mkinitcpio preset file at ${preset_file}"
   fi
