@@ -240,8 +240,8 @@ ALL_config="/etc/mkinitcpio.conf"
 ALL_kver="${_kernver}"
 PRESETS=('default')
 
-default_image="/boot/${pkgbase}.efi"
-default_uki="/boot/${pkgbase}.efi"
+default_image="/boot/EFI/${pkgbase}.efi"
+default_uki="/boot/EFI/${pkgbase}.efi"
 default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
 EOF
 
@@ -259,10 +259,9 @@ EOF
 ALL_config="/etc/mkinitcpio.conf"
 ALL_kver="${_kernver}"
 PRESETS=('default')
-
 default_image="/boot/vmlinuz-${pkgbase}"
 default_initramfs="/boot/initramfs-${pkgbase}.img"
-default_options=""
+default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
 EOF
 
     msg2 "Created standard mkinitcpio preset file at ${preset_file}"
