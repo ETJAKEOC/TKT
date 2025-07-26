@@ -19,6 +19,7 @@ env:
   _STRIP: "true"
   _kernel_on_diet: "true"
   _nofallback: "false"
+  _IS_GHCI: "true"
 
 jobs:
   build-kernel:
