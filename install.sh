@@ -78,67 +78,71 @@ _distro_prompt() {
 }
 
 _install_dependencies() {
-  _base_deps="bash bc bison ccache cmake cpio curl flex git kmod lz4 make patchutils perl python3 python3-pip rsync sudo tar time wget zstd"
-  _clang_deps="clang lld llvm"
-  _deb_common_clang="clang-format clang-tidy clang-tools"
-  _deb_common="${_base_deps} binutils binutils-dev binutils-gold build-essential debhelper device-tree-compiler dpkg-dev dwarves fakeroot g++ g++-multilib gcc gcc-multilib gnupg libc6-dev libc6-dev-i386 libdw-dev libelf-dev libncurses-dev libnuma-dev libperl-dev libssl-dev libstdc++-14-dev libudev-dev ninja-build python3-setuptools qtbase5-dev schedtool xz-utils"
-  _rpm_common="${_base_deps} dwarves gcc-c++ gawk hostname ncurses-devel libdw-devel libelf-devel libnuma-devel libopenssl-devel libudev-devel openssl openssl-devel python3-devel rpm-build rpmdevtools xz zstd"
-  _fedora_common="${_rpm_common} elfutils-devel fedora-packager fedpkg pesign numactl-devel openssl-devel-engine perl-devel perl-generators qt5-qtbase-devel"
-  _suse_common="${_rpm_common} awk kernel-source kernel-syms libqt5-qtbase-common-devel perl perl-ExtUtils-MakeMaker systemd-devel python311-devel python311-pip"
-  _slack_common="${_base_deps} binutils brotli cyrus-sasl diffutils dwarves elfutils fakeroot fakeroot-ng file gc gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust glibc git guile gzip kernel-headers libedit libelf libxml2 lzop m4 ncurses nghttp2 nghttp3 openssl perl schedtool spirv-llvm-translator xxHash xz"
-  _void_common="${_base_deps} base-devel docbook-xsl elfutils-devel fakeroot gcc gnupg graphviz liblz4-devel lz4 lzop m4 ncurses openssl-devel pahole patch pkg-config schedtool xtools xmlto xz"
+  if [ "$_IS_GHCI" = "true" ]; then
+    msg2 "Skipping useless steps for GHCI builds"
+  else
+    _base_deps="bash bc bison ccache cmake cpio curl flex git kmod lz4 make patchutils perl python3 python3-pip rsync sudo tar time wget zstd"
+    _clang_deps="clang lld llvm"
+    _deb_common_clang="clang-format clang-tidy clang-tools"
+    _deb_common="${_base_deps} binutils binutils-dev binutils-gold build-essential debhelper device-tree-compiler dpkg-dev dwarves fakeroot g++ g++-multilib gcc gcc-multilib gnupg libc6-dev libc6-dev-i386 libdw-dev libelf-dev libncurses-dev libnuma-dev libperl-dev libssl-dev libstdc++-14-dev libudev-dev ninja-build python3-setuptools qtbase5-dev schedtool xz-utils"
+    _rpm_common="${_base_deps} dwarves gcc-c++ gawk hostname ncurses-devel libdw-devel libelf-devel libnuma-devel libopenssl-devel libudev-devel openssl openssl-devel python3-devel rpm-build rpmdevtools xz zstd"
+    _fedora_common="${_rpm_common} elfutils-devel fedora-packager fedpkg pesign numactl-devel openssl-devel-engine perl-devel perl-generators qt5-qtbase-devel"
+    _suse_common="${_rpm_common} awk kernel-source kernel-syms libqt5-qtbase-common-devel perl perl-ExtUtils-MakeMaker systemd-devel python311-devel python311-pip"
+    _slack_common="${_base_deps} binutils brotli cyrus-sasl diffutils dwarves elfutils fakeroot fakeroot-ng file gc gcc gcc-g++ gcc-gcobol gcc-gdc gcc-gfortran gcc-gm2 gcc-gnat gcc-go gcc-objc gcc-rust glibc git guile gzip kernel-headers libedit libelf libxml2 lzop m4 ncurses nghttp2 nghttp3 openssl perl schedtool spirv-llvm-translator xxHash xz"
+    _void_common="${_base_deps} base-devel docbook-xsl elfutils-devel fakeroot gcc gnupg graphviz liblz4-devel lz4 lzop m4 ncurses openssl-devel pahole patch pkg-config schedtool xtools xmlto xz"
 
-  if [ "$_distro" = "Debian" ]; then
-    sudo apt update
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo apt install -y ${_deb_common} ${_deb_common_clang} ${_clang_deps}
-    else
-      sudo apt install -y ${_deb_common}
-    fi
+    if [ "$_distro" = "Debian" ]; then
+      sudo apt update
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo apt install -y ${_deb_common} ${_deb_common_clang} ${_clang_deps}
+      else
+        sudo apt install -y ${_deb_common}
+      fi
 
-  elif [ "$_distro" = "Ubuntu" ] || [ "$_distro" = "Mint" ]; then
-    sudo apt update
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo apt install -y ${_deb_common} ${_deb_common_clang} ${_clang_deps} liblz4-dev libxxhash-dev software-properties-common
-    else
-      sudo apt install -y ${_deb_common} liblz4-dev libxxhash-dev software-properties-common
-    fi
+    elif [ "$_distro" = "Ubuntu" ] || [ "$_distro" = "Mint" ]; then
+      sudo apt update
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo apt install -y ${_deb_common} ${_deb_common_clang} ${_clang_deps} liblz4-dev libxxhash-dev software-properties-common
+      else
+        sudo apt install -y ${_deb_common} liblz4-dev libxxhash-dev software-properties-common
+      fi
 
-  elif [ "$_distro" = "Fedora" ]; then
-    sudo dnf update -y
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo dnf install -y --skip-unavailable ${_fedora_common} ${_clang_deps}
-    else
-      sudo dnf install -y --skip-unavailable ${_fedora_common}
-    fi
+    elif [ "$_distro" = "Fedora" ]; then
+      sudo dnf update -y
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo dnf install -y --skip-unavailable ${_fedora_common} ${_clang_deps}
+      else
+        sudo dnf install -y --skip-unavailable ${_fedora_common}
+      fi
 
-  elif [ "$_distro" = "Suse" ]; then
-    sudo zypper refresh
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo zypper install -y ${_suse_common} ${_clang_deps}
-    else
-      sudo zypper install -y ${_suse_common}
-    fi
+    elif [ "$_distro" = "Suse" ]; then
+      sudo zypper refresh
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo zypper install -y ${_suse_common} ${_clang_deps}
+      else
+        sudo zypper install -y ${_suse_common}
+      fi
 
-  elif [ "$_distro" = "Void" ]; then
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo xbps-install -Sy ${_void_common} ${_clang_deps}
-    else
-      sudo xbps-install -Sy ${_void_common}
-    fi
+    elif [ "$_distro" = "Void" ]; then
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo xbps-install -Sy ${_void_common} ${_clang_deps}
+      else
+        sudo xbps-install -Sy ${_void_common}
+      fi
 
-  elif [ "$_distro" = "Slackware" ]; then
-    sudo slackpkg update
-    msg2 "Installing dependencies for $_distro"
-    if [[ "$_compiler_name" == *llvm* ]]; then
-      sudo slackpkg -batch=on -default_answer=y install ${_slack_common} ${_clang_deps} || true
-    else
-      sudo slackpkg -batch=on -default_answer=y install ${_slack_common} || true
+    elif [ "$_distro" = "Slackware" ]; then
+      sudo slackpkg update
+      msg2 "Installing dependencies for $_distro"
+      if [[ "$_compiler_name" == *llvm* ]]; then
+        sudo slackpkg -batch=on -default_answer=y install ${_slack_common} ${_clang_deps} || true
+      else
+        sudo slackpkg -batch=on -default_answer=y install ${_slack_common} || true
+      fi
     fi
   fi
 }
@@ -263,65 +267,69 @@ _confirm_install() {
 
 #  initramfs + GRUB2
 _regen_boot() {
+  if [ "$_IS_GHCI" = "true" ]; then
+    msg2 "Skipping useless steps for GHCI builds"
+  else
     msg2 "Creating initramfs"
 
-  # Probe if dracut is available
-  if command -v dracut >/dev/null 2>&1; then
-      use_dracut=true
-  else
-      use_dracut=false
-  fi
+    # Probe if dracut is available
+    if command -v dracut >/dev/null 2>&1; then
+        use_dracut=true
+    else
+        use_dracut=false
+    fi
 
-  # Probe if mkinitcpio is available
-  if command -v mkinitcpio >/dev/null 2>&1; then
-      use_mkinitcpio=true
-  else
-      use_mkinitcpio=false
-  fi
+    # Probe if mkinitcpio is available
+    if command -v mkinitcpio >/dev/null 2>&1; then
+        use_mkinitcpio=true
+    else
+        use_mkinitcpio=false
+    fi
 
-  # Probe if update-initramfs is available
-  if command -v update-initramfs >/dev/null 2>&1; then
-      use_update_initramfs=true
-  else
-      use_update_initramfs=false
-  fi
+    # Probe if update-initramfs is available
+    if command -v update-initramfs >/dev/null 2>&1; then
+        use_update_initramfs=true
+    else
+        use_update_initramfs=false
+    fi
 
-  # Generate initramfs using available initramfs tool
-  if [ "$use_dracut" = true ]; then
-      if [[ "$_distro" =~ ^(Fedora|Suse)$ ]]; then
-        echo "Running 'dracut' to generate the 'initramfs' file for $_distro..."
-        sudo dracut --force --hostonly ${_dracut_options} --kver "$_kernelname_rpm"
-      else
-        echo "Running 'dracut' to generate the 'initramfs' file for $_distro..."
-        sudo dracut --force --hostonly ${_dracut_options} --kver "$_kernelname"
-      fi
+    # Generate initramfs using available initramfs tool
+    if [ "$use_dracut" = true ]; then
+        if [[ "$_distro" =~ ^(Fedora|Suse)$ ]]; then
+          echo "Running 'dracut' to generate the 'initramfs' file for $_distro..."
+          sudo dracut --force --hostonly ${_dracut_options} --kver "$_kernelname_rpm"
+        else
+          echo "Running 'dracut' to generate the 'initramfs' file for $_distro..."
+          sudo dracut --force --hostonly ${_dracut_options} --kver "$_kernelname"
+        fi
 
-  elif [ "$use_mkinitcpio" = true ]; then
-      echo "Running 'mkinitcpio' to generate the 'initramfs' file..."
-      sudo mkinitcpio -k "$_kernelname" -g "/boot/initramfs-${_kernelname}.img"
-  elif [ "$use_update_initramfs" = true ]; then
-      echo "Running 'update-initramfs' to generate the 'initramfs' file..."
-      sudo update-initramfs -c -k "$_kernelname"
-  else
-      echo "Error: Unable to find dracut, mkinitcpio, or update-initramfs command."
-      exit 1
-  fi
+    elif [ "$use_mkinitcpio" = true ]; then
+        echo "Running 'mkinitcpio' to generate the 'initramfs' file..."
+        sudo mkinitcpio -k "$_kernelname" -g "/boot/initramfs-${_kernelname}.img"
+    elif [ "$use_update_initramfs" = true ]; then
+        echo "Running 'update-initramfs' to generate the 'initramfs' file..."
+        sudo update-initramfs -c -k "$_kernelname"
+    else
+        echo "Error: Unable to find dracut, mkinitcpio, or update-initramfs command."
+        exit 1
+    fi
 
-    # Probe for the name of the GRUB configuration command
-  if command -v grub-mkconfig >/dev/null 2>&1; then
-      grub_cfg_cmd="sudo grub-mkconfig -o /boot/grub/grub.cfg"
-  elif command -v grub2-mkconfig >/dev/null 2>&1; then
-      grub_cfg_cmd="sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
-  else
-      echo "Error: Unable to find grub-mkconfig or grub2-mkconfig command."
-      use_grub=false
-  fi
+      # Probe for the name of the GRUB configuration command
+    if command -v grub-mkconfig >/dev/null 2>&1; then
+        grub_cfg_cmd="sudo grub-mkconfig -o /boot/grub/grub.cfg"
+    elif command -v grub2-mkconfig >/dev/null 2>&1; then
+        grub_cfg_cmd="sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
+    else
+        echo "Error: Unable to find grub-mkconfig or grub2-mkconfig command."
+        use_grub=false
+    fi
 
-    msg2 "Updating GRUB"
-  if [ "$_use_grub" = "false" ]; then
-    echo "GRUB2 not installed, skipping GRUB2 steps..."
-  else
-    sudo ${_grub_cfg_cmd}
+      msg2 "Updating GRUB"
+    if [ "$_use_grub" = "false" ]; then
+      echo "GRUB2 not installed, skipping GRUB2 steps..."
+    else
+      sudo ${_grub_cfg_cmd}
+    fi
   fi
 }
 
