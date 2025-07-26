@@ -200,27 +200,27 @@ _gen_kern_name() {
   # Generate kernel name once, re-used everywhere
   _kernelname="${_basekernel}.${_sub}-${_kernel_flavor}"
   _kernelname_rpm="${_basekernel}.${_sub}-${_kernel_flavor//-/_}"
-  }
+}
 
-  # Condense repeated make flags
-  _make() {
+# Condense repeated make flags
+_make() {
     if [ "$1" = "verbose" ]; then
       time make V=2 ${compiler_opt} -j ${_thread_num} "$@"
     else
       time make ${compiler_opt} -j ${_thread_num} "$@"
     fi
-  }
+}
 
-  # Copy winesync header if present
-  _winesync_copy() {
+# Copy winesync header if present
+_winesync_copy() {
     if [ -e "${_where}/winesync.rules" ]; then
       sudo mkdir -p /usr/include/linux/
       sudo cp "$_kernel_work_folder_abs"/include/uapi/linux/winesync.h /usr/include/linux/winesync.h
     fi
-  }
+}
 
-  # Make versioned output dir and move artifacts in
-  _move_artifacts() {
+# Make versioned output dir and move artifacts in
+_move_artifacts() {
     local ext="$1"
 
     if [[ "$_distro" =~ ^(Fedora|Suse)$ ]]; then
@@ -246,10 +246,10 @@ _gen_kern_name() {
     else
       mv "${files[@]}" "$_where/${_kernelname}/"
     fi
-  }
+}
 
-  # Prompt install confirm
-  _confirm_install() {
+# Prompt install confirm
+_confirm_install() {
     if [[ "$_install_after_building" = "prompt" ]]; then
       read -p "Do you want to install the new Kernel ? Y/[n]: " _install
     fi
@@ -259,10 +259,10 @@ _gen_kern_name() {
     else
       return 1
     fi
-  }
+}
 
-  #  initramfs + GRUB2
-  _regen_boot() {
+#  initramfs + GRUB2
+_regen_boot() {
     msg2 "Creating initramfs"
 
   # Probe if dracut is available
@@ -323,7 +323,19 @@ _gen_kern_name() {
   else
     sudo ${_grub_cfg_cmd}
   fi
-  }
+}
+
+_strip() {
+    if [ "$_STRIP" = "true" ]; then
+      if [[ "$_compiler_name" =~ llvm ]]; then
+        echo "Stripping vmlinux..."
+        llvm-strip --strip-all-gnu $STRIP_STATIC "vmlinux"
+      elif [[ "$_compiler_name" =~ gcc ]]; then
+        echo "Stripping vmlinux..."
+        strip --strip-all $STRIP_STATIC "vmlinux"
+      fi
+    fi
+}
 
 if [ "$1" != "install" ] && [ "$1" != "config" ] && [ "$1" != "verbose" ] && [ "$1" != "uninstall-help" ]; then
   msg2 "Argument not recognised, options are:
@@ -407,11 +419,7 @@ if [ "$1" = "install" ] || [ "$1" = "verbose" ]; then
     _make || { echo "Kernel build failed"; exit 1; }
     msg2 "Build successful"
     _winesync_copy
-
-    if [ "$_STRIP" = "true" ]; then
-      echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux" || echo "strip failed"
-    fi
+    _strip
 
     PKGROOT="$_where/${_kernelname}"
 
@@ -560,11 +568,7 @@ EOF
     _make || { echo "Kernel build failed"; exit 1; }
     msg2 "Build successful"
     _winesync_copy
-
-    if [ "$_STRIP" = "true" ]; then
-      echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux" || echo "strip failed"
-    fi
+    _strip
 
     _pkgname="kernel-${_kernel_flavor}"
     _pkgver="${_basekernel}.${_sub}"
@@ -665,16 +669,7 @@ EOF
     msg2 "Building kernel"
     make -j ${_thread_num}
     msg2 "Build successful"
-
-    if [ "$_STRIP" = "true" ]; then
-      if [[ "$_compiler_name" =~ llvm ]]; then
-        echo "Stripping vmlinux..."
-        llvm-strip --strip-all-gnu $STRIP_STATIC "vmlinux"
-      elif [[ "$_compiler_name" =~ gcc ]]; then
-        echo "Stripping vmlinux..."
-        strip --strip-all $STRIP_STATIC "vmlinux"
-      fi
-    fi
+    _strip
 
     _headers_folder_name="linux-$_kernel_flavor"
 
