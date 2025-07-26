@@ -43,6 +43,7 @@ jobs:
           git config --global --add safe.directory "$(pwd)"
           if [ "${{ inputs.compiler }}" = "llvm" ] || [ "${{ inputs.compiler }}" = "clang" ]; then
             export KCFLAGS="-Wout-of-line-declaration"
+            export KCPPFLAGS=""
           fi
           sed -i 's/^_distro=".*"/_distro="Ubuntu"/' customization.cfg
           sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
