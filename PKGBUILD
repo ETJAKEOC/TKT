@@ -8,7 +8,7 @@
 # All credits due to the previous pioneers of this script whom came before me. Thank you for your effort.
 # Hijacked by: ETJAKEOC <etjakeoc@gmail.com>
 
-pkgdesc='A customized Linux kernel install script, forked from the TKG script, aimed at a more performant tune, at the risk of stability.'
+pkgdesc='A customized Linux kernel install script, forked from the TKG script, aimed at a more performant tune, at the risk of unsupported hardware.'
 arch=('x86_64') # no i686 in here
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -60,7 +60,7 @@ source "$_where"/TKT_CONFIG
 if [ -n "$_custom_pkgbase" ]; then
   pkgbase="${_custom_pkgbase}"
 else
-  pkgbase=linux"${_basever}"-tkt-"${_cpusched}"${_compiler_name}
+  pkgbase=linux"${_basever}"-tkt-"${_cpusched}""${_compiler_name}"
 fi
 pkgname=("${pkgbase}" "${pkgbase}-headers")
 pkgver="${_basekernel}"."${_sub}"
@@ -143,6 +143,7 @@ build() {
     return 0
   )
 }
+
 hackbase() {
   source "$_where"/TKT_CONFIG
 
@@ -212,53 +213,6 @@ hackbase() {
   if [ -e "${srcdir}/ntsync.rules" ]; then
     msg2 "Installing udev rule for ntsync"
     install -Dm644 "${srcdir}"/ntsync.rules "${pkgdir}/etc/udev/rules.d/ntsync.rules"
-  fi
-}
-ukify() {
-  # Check if the installed kernel is a UKI and update mkinitcpio preset
-    msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
-      if _is_uki "$modulesdir/vmlinuz"; then
-    msg2 "Unified Kernel Image detected, updating mkinitcpio preset..."
-    
-  # Create or update the mkinitcpio preset file
-      local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
-    mkdir -p "${pkgdir}/etc/mkinitcpio.d"
-    
-  # Write a UKI-compatible preset
-    cat > "$preset_file" <<EOF
-
-  # mkinitcpio preset file for ${pkgbase} (UKI configuration)
-
-      ALL_config="/etc/mkinitcpio.conf"
-      ALL_kver="${_kernver}"
-      PRESETS=('default')
-      default_image="/boot/EFI/${pkgbase}.efi"
-      default_uki="/boot/EFI/${pkgbase}.efi"
-      default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
-
-EOF
-
-    msg2 "Updated mkinitcpio preset file at ${preset_file} for UKI"
-  else
-    msg2 "No Unified Kernel Image detected, using standard preset configuration..."
-    
-    # Create a standard preset file (if needed)
-    local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
-       mkdir -p "${pkgdir}/etc/mkinitcpio.d"
-    
-    cat > "$preset_file" <<EOF
-
-# mkinitcpio preset file for ${pkgbase}
-
-    ALL_config="/etc/mkinitcpio.conf"
-    ALL_kver="${_kernver}"
-    PRESETS=('default')
-    default_image="/boot/vmlinuz-${pkgbase}"
-    default_initramfs="/boot/initramfs-${pkgbase}.img"
-    default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
-
-EOF
-    msg2 "Created standard mkinitcpio preset file at ${preset_file}"
   fi
 }
 
@@ -380,9 +334,57 @@ hackheaders() {
   fi
 }
 
+_ukify() {
+  msg2 "Checking if the installed kernel is a Unified Kernel Image (UKI)..."
+
+  local preset_file="${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
+  mkdir -p "${pkgdir}/etc/mkinitcpio.d"
+
+    # If preset already exists, back it up
+  if [[ -f "$preset_file" ]]; then
+    msg2 "Existing preset found at ${preset_file}, backing it up to ${preset_file}.old"
+    mv "$preset_file" "${preset_file}.old"
+  fi
+
+  if _is_uki "$modulesdir/vmlinuz"; then
+    msg2 "Unified Kernel Image detected, updating mkinitcpio preset..."
+
+    cat > "$preset_file" <<EOF
+# mkinitcpio preset file for ${pkgbase} (UKI configuration)
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="${_kernver}"
+PRESETS=('default')
+default_image="/boot/EFI/${pkgbase}.efi"
+default_uki="/boot/EFI/${pkgbase}.efi"
+default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+EOF
+
+    msg2 "Updated mkinitcpio preset file at ${preset_file} for UKI"
+  else
+    msg2 "No Unified Kernel Image detected, using standard preset configuration..."
+
+    cat > "$preset_file" <<EOF
+# mkinitcpio preset file for ${pkgbase}
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="${_kernver}"
+PRESETS=('default')
+default_image="/boot/vmlinuz-${pkgbase}"
+default_initramfs="/boot/initramfs-${pkgbase}.img"
+default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+EOF
+
+    msg2 "Created standard mkinitcpio preset file at ${preset_file}"
+  fi
+}
+
 source /dev/stdin <<EOF
 package_${pkgbase}() {
 hackbase
+if [[ "\$_ukify" == "true" ]]; then
+  _ukify
+fi
 }
 
 package_${pkgbase}-headers() {
