@@ -1,0 +1,81 @@
+name: Build Gentoo OpenRC kernel
+on:
+  workflow_call:
+    inputs:
+      _cpusched:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+
+env:
+  _processor_opt: "x86-64"
+  _distro: "Gentoo"
+  _git_mirror: "gregkh"
+  _logging_use_script: "no"
+  _install_after_building: "no"
+  _debugdisable: "true"
+  _noccache: "true"
+  _STRIP: "true"
+  _kernel_on_diet: "true"
+  _nofallback: "false"
+  _IS_GHCI: "true"
+
+jobs:
+  build-kernel:
+    env:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    runs-on: ubuntu-latest
+    container: ghcr.io/etjakeoc/tkt-gentoo-openrc-dev:latest
+
+    steps:
+      - name: Checkout TKT
+        uses: actions/checkout@v4
+
+      - name: Adjust compiler and compile Kernel
+        env:
+          _cpusched: ${{ inputs._cpusched }}
+          compiler: ${{ inputs.compiler }}
+          CC: x86_64-pc-linux-gnu
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          if [ "${{ inputs.compiler }}" = "llvm" ] || [ "${{ inputs.compiler }}" = "clang" ]; then
+            export KCFLAGS="-Wout-of-line-declaration"
+          fi
+          sed -i 's/^_distro=".*"/_distro="Gentoo"/' customization.cfg
+          sed -i 's/^_compiler=".*"/_compiler="${{ inputs.compiler }}"/' customization.cfg
+          set +o pipefail
+          yes '' | ./install.sh install || true
+          set -o pipefail
+
+          # Adapt for Gentoo from here down
+      - name: Package Gentoo files
+        run: |
+          tar czf Gentoo-OpenRC-linux-diet-${{ env._cpusched }}-${{ inputs.compiler }}.tar.gz */*.whatever
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gentoo-openrc-kernel-packages-${{ env._cpusched }}-${{ inputs.compiler }}
+          path: Gentoo-OpenRC-linux-*.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Gentoo OpenRC Kernel Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: Gentoo-OpenRC-linux-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
