@@ -667,8 +667,13 @@ EOF
     msg2 "Build successful"
 
     if [ "$_STRIP" = "true" ]; then
-      echo "Stripping vmlinux..."
-      strip -v $STRIP_STATIC "vmlinux"
+      if [[ "$_compiler_name" =~ llvm ]]; then
+        echo "Stripping vmlinux..."
+        llvm-strip --strip-all-gnu $STRIP_STATIC "vmlinux"
+      elif [[ "$_compiler_name" =~ gcc ]]; then
+        echo "Stripping vmlinux..."
+        strip --strip-all $STRIP_STATIC "vmlinux"
+      fi
     fi
 
     _headers_folder_name="linux-$_kernel_flavor"
