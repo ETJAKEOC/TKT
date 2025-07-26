@@ -43,8 +43,8 @@ fi
 . current_env
 source kconfigs/prepare
 _build_dir="$_kernel_work_folder_abs/.."
-export KCPPFLAGS
-export KCFLAGS
+export KCPPFLAGS="-Wno-error"
+export KCFLAGS="-Wno-error"
 
 # Use custom compiler paths if defined
 if [[ "$_compiler_name" =~ llvm ]] && [ -n "${CUSTOM_LLVM_PATH}" ]; then
