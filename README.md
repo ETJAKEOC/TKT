@@ -171,10 +171,6 @@ The script will use a slightly modified Arch config from the `config` folder, it
 - The script uses Arch's `.config` file as a base. A custom one can be provided through `_configfile` in `customization.cfg`.
 - The installed files will not be tracked by your package manager and uninstalling requires manual intervention. `./install.sh uninstall-help` can help with useful information if your install procedure follows the `Generic` approach.
 
-#### Included script!!!
-You may notice a random script file in this repository called `initramfs-and-grub-update.sh`. This script *should* provide you with the most basic setup to recompile your initramfs, and resetup the GRUB2 bootmenu after compiling your kernel.
-This has not been tested on all systems, results may vary, you may have to adapt to fit your system.
-
 #### Support
 
 If all else has failed, you can find us at our [The ꓘernel Toolkit](https://discord.gg/c9h5Ganv) Official Discord Server.
