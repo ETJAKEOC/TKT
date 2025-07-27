@@ -35,11 +35,28 @@ fi
 
 source customization.cfg
 
+# Source the user config file from '~/.config/TKT.cfg'
 if [ -e "$_EXT_CONFIG_PATH" ]; then
   msg2 "External configuration file $_EXT_CONFIG_PATH will be used and will override customization.cfg values."
   source "$_EXT_CONFIG_PATH"
 fi
 
+# Logic to override some settings for GHCI builds
+if [ "$_IS_GHCI" = "true" ]; then
+  export _menuconfig="false" # We're non-interactive
+  export _kernel_on_diet="true" # Github has size limits sadly
+  export _openrgb="true" # If it's a kernel for the masses <.<
+  export _install_after_building="no" # Well, now why would you install a kernel inside a container?
+  export _processor_opt="x86-64" # x86_64 or go home
+  export _git_mirror="gregkh"
+  export _debugdisable="true" # Reduce weight of kernel
+  export _noccache="true" # Docker containers can't reuse ccache anyways, save space
+  export _STRIP="true" # Save more space
+  export _nofallback="false" # Prevents GHCI from failing out
+  export _logging_use_script="no" # GHCI has good logging
+fi
+
+# Kernel prep work
 . current_env
 source kconfigs/prepare
 _build_dir="$_kernel_work_folder_abs/.."
@@ -53,6 +70,7 @@ elif [ -n "${CUSTOM_GCC_PATH}" ]; then
   PATH="${CUSTOM_GCC_PATH}/bin:${CUSTOM_GCC_PATH}/lib:${CUSTOM_GCC_PATH}/include:${PATH}"
 fi
 
+# Set make jobs
 if [ "$_force_all_threads" = "true" ]; then
   _thread_num=`nproc`
 else
