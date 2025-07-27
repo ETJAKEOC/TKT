@@ -45,6 +45,7 @@ jobs:
         compiler: [gcc, llvm]
         os: [arch, debian, fedora, slackware, suse, ubuntu]
     uses: ./.github/workflows/builder-dispatcher.yml
+    continue-on-error: true
     with:
       _cpusched: ${{ matrix._cpusched }}
       compiler: ${{ matrix.compiler }}
