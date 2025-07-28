@@ -34,6 +34,13 @@ jobs:
       compiler: ${{ inputs.compiler }}
     if: inputs.os == 'fedora'
 
+  dispatch-to-gentoo-openrc:
+    uses: ./.github/workflows/gentoo-openrc-builder.yml
+    with:
+      _cpusched: ${{ inputs._cpusched }}
+      compiler: ${{ inputs.compiler }}
+    if: inputs.os == 'gentoo-openrc'
+
   dispatch-to-slackware:
     uses: ./.github/workflows/slackware-builder.yml
     with:
