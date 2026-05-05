@@ -1,0 +1,105 @@
+body {
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+}
+
+pre {
+  background-color: #f5f5f5;
+  padding: 0.75em 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  position: relative; /* so the button can be positioned */
+}
+
+code {
+  font-family: monospace, monospace;
+  font-size: 0.95em;
+}
+
+p code {
+  background-color: #eee;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+table {
+  margin: 1em;
+  border: 1px solid black;
+  border-radius: 7px;
+  overflow: clip;
+  background-color: #d5e0f4;
+}
+
+td {
+  padding: 0.3em 1em;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: white;
+}
+
+tbody tr:nth-child(even) {
+  background-color: aliceblue;
+}
+
+thead tr {
+  color: white;
+  background-color: darkcyan;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  font-size: 0.8em;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+}
+
+.grey {
+  color: grey;
+}
+
+#kernel-select {
+  display: flex;
+  flex-direction: column;
+}

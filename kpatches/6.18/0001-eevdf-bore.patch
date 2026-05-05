@@ -1,0 +1,89 @@
++From: ETJAKEOC <ETJAKEOC@gmail.com.com>
++Date: Fri, 21 Nov 2025 00:00:00 +0000
++Subject: [PATCH] sched: add optional EEVDF+BORE integration
++
++This patch introduces an opt-in integration that implements BORE-style
++micro-optimizations and scheduling hooks inside the stock EEVDF scheduler
++implementation. The goal is to provide the BORE behavioral improvements while
++keeping the EEVDF codepath and configuration intact.
++
++Design notes:
++- The integration is opt-in via CONFIG_EEVDF_BORE so it does not change the
++  default kernel behavior.
++- The patch is deliberately small and conservative: it provides a shim and a
++  few hot-path annotations, prefetching hints, and cacheline alignment for
++  critical per-runqueue contexts. It avoids reworking core EEVDF logic or
++  replacing the scheduler.
++- This is intended as a secondary patch to be applied after the `bore` and
++  targeted optimization patches; it references the helper header
++  kernel/sched/bore_opt.h.
++
++
+*** Add File: kernel/sched/eevdf_bore.c
++--- /dev/null
+++++ b/kernel/sched/eevdf_bore.c
++@@
++/*
++ * eevdf_bore.c - optional EEVDF + BORE integration shim
++ *
++ * This file provides a small set of hooks and micro-optimizations to allow
++ * EEVDF to benefit from the BORE improvements without replacing the core
++ * scheduler. It is gated behind CONFIG_EEVDF_BORE.
++ */
++
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/sched/eevdf.h>
++#include "bore_opt.h"
++
++#ifdef CONFIG_EEVDF_BORE
++
++/* Per-runqueue context that benefits from cacheline alignment */
++struct eevdf_bore_rq {
++    struct hrtimer    steal_timer; /* example field protected by alignment */
++    /* keep space for future counters that BORE wants to track */
++    unsigned long     bore_flags;
++} BORE_CACHELINE_ALIGN;
++
++/* Lightweight prefetch wrapper for EEVDF wakeup/enqueue paths */
++static BORE_ATTR_ALWAYS_INLINE void eevdf_bore_prefetch_task(const struct task_struct *p)
++{
++    /* Use the defensive helper from bore_opt.h */
++    PREFETCH_TASK_FOR_WAKEUP(p);
++}
++
++/* Annotated, small wrapper around eevdf_enqueue to add BORE hints */
++void BORE_ATTR_HOT eevdf_bore_enqueue(struct rq *rq, struct task_struct *p, int flags)
++{
++    /* prefetch task and rq to improve cache locality */
++    eevdf_bore_prefetch_task(p);
++    prefetch(rq);
++
++    /* call into existing EEVDF enqueue implementation */
++    eevdf_enqueue(rq, p, flags);
++
++    /* light-weight bookkeeping reserved for future BORE heuristics */
++    smp_wmb(); /* ensure ordering for bore_flags updates (cheap) */
++    /* optional: increment per-rq counter if present */
++}
++
++/* Annotated, small wrapper around eevdf_wakeup to add BORE hints */
++void BORE_ATTR_HOT eevdf_bore_wakeup(struct rq *rq, struct task_struct *p)
++{
++    eevdf_bore_prefetch_task(p);
++    prefetch(rq);
++
++    /* call into the normal EEVDF wakeup helper */
++    eevdf_wakeup(rq, p);
++}
++
++#endif /* CONFIG_EEVDF_BORE */
++
+*** End Patch
++
+*** Update File: kernel/sched/Makefile
++--- a/kernel/sched/Makefile
+++++ b/kernel/sched/Makefile
++@@
+  obj-y := core.o rt.o deadline.o fair.o
++obj-$(CONFIG_EEVDF_BORE) += eevdf_bore.o

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKT - Documentation</title>
+    <link rel="icon" type="image/png"
+          href="https://avatars.githubusercontent.com/The-Kernel-Toolkit?s=64">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header>
+      <img alt="TKT Logo" class="logo"
+           src="https://avatars.githubusercontent.com/The-Kernel-Toolkit?s=64">
+      <h1>The Kernel Toolkit</h1>
+    </header>
+    <main>
+      <section>
+        <h2>Releases</h2>
+        <div id="kernel-select">
+          <label>
+            select version:
+            <select id="select-version"></select>
+          </label>
+          <label>
+            select distribution:
+            <select id="select-distro">
+              <option>all</option>
+            </select>
+          </label>
+          <label>
+            select scheduler:
+            <select id="select-scheduler">
+              <option>all</option>
+            </select>
+          </label>
+          <label>
+            select compiler:
+            <select id="select-compiler">
+              <option>all</option>
+            </select>
+          </label>
+        </div>
+        <table id="releases-table"></table>
+      </section>
+      <section>
+        <h2>TKT Documentation</h2>
+        <p>This is where TKT development will be documented.</p>
+        <p>
+          If you are using Arch Linux, you can compile the kernel
+          with the following command:
+        </p>
+        <pre><code><span class="no-select grey">$ </span>makepkg -si</code></pre>
+        <p>
+          For any other distributions, the recommended way is by using
+          the <code>install.sh</code> script as such:
+        </p>
+        <pre><code><span class="no-select grey">$ </span>bash install.sh install</code></pre>
+        <p>
+          For more information, check out the
+          <a href="https://github.com/The-Kernel-Toolkit/TKT/blob/main/docs/COMPILATION_GUIDELINE.md">compilation guideline</a>.
+        </p>
+      </section>
+    </main>
+    <script src="copy_button.js"></script>
+    <script type="module">
+      import {
+        cachedFetch,
+        populateTable,
+        getFilesFromReleases,
+        TableFilter,
+      } from './releases.js';
+
+      const OWNER = 'The-Kernel-Toolkit';
+      const REPO = 'TKT';
+
+      const url = `https://api.github.com/repos/${OWNER}/${REPO}/releases`;
+      const releases = await cachedFetch(url, 'kernelReleases');
+      releases.sort((a, b) => (new Date(b.published_at)) - (new Date(a.published_at)));
+      const fileList = getFilesFromReleases(releases);
+
+      const tableElement = document.getElementById('releases-table');
+      const selectElements = {
+        selectVersion: document.getElementById('select-version'),
+        selectDistro: document.getElementById('select-distro'),
+        selectScheduler: document.getElementById('select-scheduler'),
+        selectCompiler: document.getElementById('select-compiler'),
+      };
+
+      new TableFilter(fileList, tableElement, selectElements, populateTable);
+    </script>
+  </body>
+</html>
