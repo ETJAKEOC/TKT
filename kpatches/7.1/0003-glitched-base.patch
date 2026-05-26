@@ -16,7 +16,7 @@ index baf3ab8d9d49..854e32e6aec7 100755
  # Maximum length of UTS_VERSION is 64 chars
  filechk_uts_version = \
 -	utsver=$$(echo '$(pound)'"$(build-version)" $(smp-flag-y) $(preempt-flag-y) "$(build-timestamp)" | cut -b -64); \
-+	utsver=$$(echo '$(pound)'"$(build-version)" $(smp-flag-y) $(preempt-flag-y) "TKG" "$(build-timestamp)" | cut -b -64); \
++	utsver=$$(echo '$(pound)'"$(build-version)" $(smp-flag-y) $(preempt-flag-y) "TKT" "$(build-timestamp)" | cut -b -64); \
  	echo '$(pound)'define UTS_VERSION \""$${utsver}"\"
 
  #
