@@ -53,7 +53,7 @@ if [[ -z "$_git_mirror" ]]; then
 fi
 
 # if alias, get actual link from map _kernel_git_remotes
-if [[ "${_git_remote_names[@]}" =~ "$_git_mirror" ]]; then
+if [[ -n "${_kernel_git_remotes[$_git_mirror]:-}" ]]; then
   msg2 "using git mirror alias $_git_mirror"
   _git_mirror="${_kernel_git_remotes[$_git_mirror]}"
 fi
@@ -1733,7 +1733,7 @@ CONFIG_DEBUG_INFO_BTF_MODULES=y\r
     fi
     _community_patches=($_community_patches)
     mkdir -p "$_where"/linux"$_basever"-tkg-userpatches
-    for _p in ${_community_patches[@]}; do
+    for _p in "${_community_patches[@]}"; do
       if [ ! -e "$_where/linux$_basever-tkg-userpatches/$_p" ]; then
         ln -s "$_where"/../community-patches/linux"$_basever"-tkg/$_p "$_where"/linux"$_basever"-tkg-userpatches/$_p
       else
@@ -1751,7 +1751,7 @@ CONFIG_DEBUG_INFO_BTF_MODULES=y\r
   fi
 
   # Community patches removal
-  for _p in ${_community_patches[@]}; do
+  for _p in "${_community_patches[@]}"; do
     rm -f "$_where"/linux"$_basever"-tkg-userpatches/$_p
   done
 
@@ -1933,7 +1933,7 @@ exit_cleanup() {
   rm -f "$_where"/ntsync.rules
 
   # Community patches removal in case of failure
-  for _p in ${_community_patches[@]}; do
+  for _p in "${_community_patches[@]}"; do
     rm -f "$_where"/"$_basever"-userpatches/"$_p"
   done
 

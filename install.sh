@@ -127,9 +127,9 @@ _install_dependencies() {
     msg2 "Installing dependencies for $_distro"
 
     if [[ "$_debian_version" -lt 13 ]]; then
-      _deb_common=${_deb_common} libstdc++-12-dev
+      _deb_common="${_deb_common} libstdc++-12-dev"
     else
-      _deb_common=${_deb_common} libstdc++-14-dev
+      _deb_common="${_deb_common} libstdc++-14-dev"
     fi
 
     if [[ "$_compiler_name" == *llvm* ]]; then
@@ -363,19 +363,21 @@ _regen_boot() {
 
   # Probe for the name of the GRUB configuration command
   if command -v grub-mkconfig >/dev/null 2>&1; then
-    grub_cfg_cmd="sudo grub-mkconfig -o /boot/grub/grub.cfg"
+    grub_cfg_cmd="grub-mkconfig -o /boot/grub/grub.cfg"
+    use_grub=true
   elif command -v grub2-mkconfig >/dev/null 2>&1; then
-    grub_cfg_cmd="sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
+    grub_cfg_cmd="grub2-mkconfig -o /boot/grub2/grub.cfg"
+    use_grub=true
   else
     echo "Error: Unable to find grub-mkconfig or grub2-mkconfig command."
     use_grub=false
   fi
 
   msg2 "Updating GRUB"
-  if [ "$_use_grub" = "false" ]; then
+  if [ "$use_grub" = "false" ]; then
     echo "GRUB2 not installed, skipping GRUB2 steps..."
   else
-    sudo ${_grub_cfg_cmd}
+    sudo ${grub_cfg_cmd}
   fi
 }
 
@@ -731,7 +733,7 @@ EOF
 
       msg2 "Void Linux package created: $_where/${_kernel_flavor}/${_pkgfullver}.x86_64.xbps"
 
-      rm -rf "$PKGROOT/boot" "$PKGROOT/usr" "$PKGROOT/install-script.sh" "$PKGROOT/remove-script.sh"
+      rm -rf "${PKGROOT:?}/boot" "${PKGROOT:?}/usr" "${PKGROOT:?}/install-script.sh" "${PKGROOT:?}/remove-script.sh"
 
       local_repo_dir="$(realpath "$_where/${_kernelname}")"
 
