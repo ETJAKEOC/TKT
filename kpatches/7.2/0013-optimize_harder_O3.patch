@@ -1,4 +1,4 @@
-From 6686bca77194164171a7f362122203d2f79280e7 Mon Sep 17 00:00:00 2001
+From 402a66a01876617f084aabf237b5e439ef543acb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Christian=20K=C3=BChn?= <damachin3@proton.me>
 Date: Wed, 15 Apr 2026 21:55:26 +0200
 Subject: [PATCH] Add O3 compiler optimization options
@@ -30,10 +30,10 @@ Signed-off-by: Christian Kühn <damachin3@proton.me>
  3 files changed, 16 insertions(+), 6 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index 9e4052181..ca446ff83 100644
+index bfb47ad8c..ee931c6b5 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -924,16 +924,25 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
+@@ -929,16 +929,25 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
  ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
  KBUILD_CFLAGS += -O2
  KBUILD_RUSTFLAGS += -Copt-level=2
@@ -59,7 +59,7 @@ index 9e4052181..ca446ff83 100644
  # Tell gcc to never replace conditional load with a non-conditional one
  ifdef CONFIG_CC_IS_GCC
  # gcc-10 renamed --param=allow-store-data-races=0 to
-@@ -1136,11 +1161,6 @@ KBUILD_CFLAGS	+= -fno-strict-overflow
+@@ -1154,11 +1179,6 @@ KBUILD_CFLAGS	+= -fno-strict-overflow
  # Make sure -fstack-check isn't enabled (like gentoo apparently did)
  KBUILD_CFLAGS  += -fno-stack-check
  
@@ -72,7 +72,7 @@ index 9e4052181..ca446ff83 100644
  KBUILD_CFLAGS += -fno-builtin-wcslen
  
 diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 1d526a5d2..ccceed491 100644
+index 598f17810..a2ef052ce 100644
 --- a/arch/x86/Makefile
 +++ b/arch/x86/Makefile
 @@ -73,7 +73,7 @@ export BITS
@@ -85,10 +85,10 @@ index 1d526a5d2..ccceed491 100644
  KBUILD_RUSTFLAGS += -Ctarget-feature=-sse,-sse2,-sse3,-ssse3,-sse4.1,-sse4.2,-avx,-avx2
  
 diff --git a/init/Kconfig b/init/Kconfig
-index 2937c4d30..854c60996 100644
+index 5230d4879..b57b6ac83 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -1602,6 +1610,12 @@ config CC_OPTIMIZE_FOR_PERFORMANCE
+@@ -1613,6 +1621,12 @@ config CC_OPTIMIZE_FOR_PERFORMANCE
  	  with the "-O2" compiler flag for best performance and most
  	  helpful compile-time warnings.
  
