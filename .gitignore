@@ -30,3 +30,4 @@ linux-kernel.git/
 linux-src-git/
 kernelconfig.new
 minimal-modprobed.db
+.ideas/
