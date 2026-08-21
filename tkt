@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+_where="$(pwd)"
+
+# Source core library
+# shellcheck source=/dev/null
+source "$_where/lib/core.sh"
+# shellcheck source=/dev/null
+source "$_where/lib/installer.sh"
+# shellcheck source=/dev/null
+source "$_where/lib/tui.sh"
+
+if [ $# -eq 0 ] && command -v whiptail >/dev/null 2>&1; then
+    # Launch TUI
+    # Disable set -e for TUI mode to prevent accidental exits on Cancel/Esc
+    set +e
+    tkt_tui_main
+else
+    # Launch CLI
+    tkt_cli_main "$@"
+fi

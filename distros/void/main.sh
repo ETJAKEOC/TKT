@@ -12,23 +12,7 @@ distro_install_dependencies() {
 }
 
 distro_build_pkg() {
-  _gen_kern_name
-  ./scripts/config --set-str LOCALVERSION "-${_kernel_flavor}"
-
-  msg2 "Building kernel for ${_distro}..."
-  _make bzImage modules || { echo "Kernel build failed"; exit 1; }
-  msg2 "Build successful"
-  _winesync_copy
-
-  if [ "$_STRIP" = "true" ]; then
-    if [[ "$_compiler_name" =~ llvm ]]; then
-      echo "Stripping vmlinux..."
-      llvm-strip --strip-all-gnu "${STRIP_STATIC}" "$_where/linux-src-git/vmlinux"
-    elif [[ "$_compiler_name" =~ gcc ]]; then
-      echo "Stripping vmlinux..."
-      strip --strip-all "${STRIP_STATIC}" "$_where/linux-src-git/vmlinux"
-    fi
-  fi
+  _build_kernel_generic
 
   _pkgname="kernel-${_kernel_flavor}"
   _pkgver="${_basekernel}.${_sub}"

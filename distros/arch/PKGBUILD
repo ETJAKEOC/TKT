@@ -25,6 +25,10 @@ optdepends=('schedtool')
 options=('!strip' 'buildflags' 'makeflags' '!emptydirs' '!docs')
 _where="$PWD"
 
+# Source core library
+# shellcheck source=/dev/null
+source "$_where/lib/core.sh"
+
 # Create logs dir if it does not already exist
 [ -d "$_where/logs" ] || mkdir -p "$_where/logs"
 
@@ -32,29 +36,13 @@ if [ -n "$FAKEROOTKEY" ]; then
   echo "Sourcing 'TKT_CONFIG' file"
 else
   rm -f "$_where"/TKT_CONFIG
-  if [ "$_IS_GHCI" = "true" ]; then
-    msg2 "Overriding config options for GHCI build"
-    source "/GHCI.cfg"
-    # Save GHCI.cfg contents directly to TKT_CONFIG, no external overrides
-    cp /GHCI.cfg "$_where"/TKT_CONFIG
-  else
-    cp "$_where"/customization.cfg "$_where"/TKT_CONFIG
-
-    # extract _EXT_CONFIG_PATH from customization.cfg only if not GHCI
-    if [[ -z "$_EXT_CONFIG_PATH" ]]; then
-      eval $(grep _EXT_CONFIG_PATH "$_where"/customization.cfg)
-    fi
-
-    # Only append external config if path exists
-    if [ -f "$_EXT_CONFIG_PATH" ]; then
-      msg2 "External configuration file $_EXT_CONFIG_PATH will be used and will override customization.cfg values."
-      cat "$_EXT_CONFIG_PATH" >>"$_where"/TKT_CONFIG
-    fi
-  fi
+  _source_tkt_config
+  # Save the resolved configuration to TKT_CONFIG for consistency
   declare -p -x >>"$_where"/TKT_CONFIG
   echo -e "_ispkgbuild=\"true\"\n_distro=\"Arch\"\n_where=\"$PWD\"" >>"$_where"/TKT_CONFIG
   source "$_where"/TKT_CONFIG
-  source "$_where"/kconfigs/prepare
+  # shellcheck source=/dev/null
+  source "$_where"/lib/prepare.sh
   _tkg_initscript
 fi
 
@@ -65,7 +53,7 @@ pkgname=("${pkgbase}" "${pkgbase}-headers")
 pkgver="${_basekernel}"."${_sub}"
 pkgrel=1
 
-for f in "$_where"/kconfigs/"$_basekernel"/* "$_where"/kpatches/"$_basekernel"/*; do
+for f in "$_where"/kernels/"$_basekernel"/* "$_where"/kernels/"$_basekernel"/patches/*; do
   source+=("$f")
   sha256sums+=("SKIP")
 done
@@ -76,8 +64,9 @@ export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EP
 
 prepare() {
   source "$_where"/TKT_CONFIG
-  source "$_where"/kconfigs/prepare
-  rm -rf $pkgdir # Nuke the entire pkg folder so it'll get regenerated clean on next build
+  # shellcheck source=/dev/null
+  source "$_where"/lib/prepare.sh
+  rm -rf "$pkgdir" # Nuke the entire pkg folder so it'll get regenerated clean on next build
   ln -s "${_kernel_work_folder_abs}" "${srcdir}/linux-src-git"
   _tkg_srcprep
 }
@@ -87,18 +76,9 @@ build() {
   cd "$_kernel_work_folder_abs"
 
   # -------------------------
-  # Job scheduling
+  # Job scheduling, ccache, and optimization logic moved to lib/core.sh
   # -------------------------
-  local _make_jobs_arg
-  if [ "$_force_all_threads" = "true" ]; then
-    _make_jobs_arg="-j$(nproc)"
-  else
-    _make_jobs_arg="-j$(($(nproc) / 2))"
-  fi
 
-  # -------------------------
-  # ccache
-  # -------------------------
   if [ "$_noccache" != "true" ] && pacman -Qq ccache &>/dev/null; then
     export PATH="/usr/lib/ccache/bin/:$PATH"
     export CCACHE_SLOPPINESS="file_macro,locale,time_macros"
@@ -106,64 +86,13 @@ build() {
     msg2 'ccache was found and will be used'
   fi
 
-  # -------------------------
   # Document TKT variables
-  # -------------------------
   declare -p | cut -d ' ' -f 3 | grep -P '^_(?!=|EXT_CONFIG_PATH|where|path)' >"${srcdir}/customization-full.cfg"
 
-  # -------------------------
   # Optimization flags
-  # -------------------------
   CFLAGS=${CFLAGS/-O2/}
 
-  # -------------------------
-  # Propeller + PGO + AutoAFDO
-  # -------------------------
-
-  # Base LLVM flags container
-  export LLVM_FLAGS=""
-  export LDFLAGS=""
-
-  # --- Profile Generation Mode ---
-  if [[ "$_pgo_generate" == "true" ]]; then
-    msg2 "Kernel build in **PGO generation** mode"
-    export LLVM_PROFDIR="${srcdir}/pgo-profiles"
-    mkdir -p "$LLVM_PROFDIR"
-    LLVM_FLAGS+=" -fprofile-generate=${LLVM_PROFDIR}"
-  fi
-
-  # --- Profile Use Mode ---
-  if [[ "$_pgo_use" == "true" ]]; then
-    msg2 "Kernel build in **PGO USE** mode"
-    LLVM_FLAGS+=" -fprofile-use=${_pgo_profile_path} -fprofile-correction"
-  fi
-
-  # --- AutoFDO / AutoFDR ---
-  if [[ "$_auto_afdo" == "true" ]]; then
-    msg2 "Enabling **AutoFDO / AutoFDR**"
-    LLVM_FLAGS+=" -fauto-profile=${_auto_fdo_profile}"
-  fi
-
-  # --- Propeller: instrumentation ---
-  if [[ "$_propeller_generate" == "true" ]]; then
-    msg2 "Building with **Propeller instrumentation**"
-    LLVM_FLAGS+=" -Wl,--emit-relocs -Wl,-z,notext"
-  fi
-
-  # --- Propeller: optimized layout ---
-  if [[ "$_propeller_use" == "true" ]]; then
-    msg2 "Applying **Propeller optimized layout**"
-    LDFLAGS+=" -Wl,--propeller=${_propeller_profile}"
-  fi
-
-  # Inject flags into build env
-  export KCFLAGS+="$LLVM_FLAGS"
-  export KCPPFLAGS+="$LLVM_FLAGS"
-  export LDFLAGS
-
-  # -------------------------
   # schedtool niceness
-  # -------------------------
   if pacman -Qq schedtool &>/dev/null; then
     msg2 "Using schedtool to set scheduling policy for the build."
     local _pid="$$"
@@ -171,32 +100,9 @@ build() {
     command ionice -n 1 -p "$_pid" || :
   fi
 
-  # -------------------------
-  # Diet / modprobed kernel
-  # -------------------------
-  local diet_args=""
-  local diet_target=""
-
-  if [[ "$_modprobeddb" == "true" || "$_kernel_on_diet" == "true" ]]; then
-    msg2 "Building modprobed/diet kernel with ${_compiler^^}..."
-    diet_args="LMC_KEEP=false LMC_FILE=='${_modprobeddb_db_path}'"
-    diet_target="localmodconfig"
-  else
-    msg2 "Building generic kernel with ${_compiler^^}..."
-  fi
-
-  # -------------------------
-  # Final build
-  # -------------------------
+  # Final build via core library
   msg2 "Starting kernel compile..."
-  {
-    if [[ "$ETJAKEOC" == "1" ]]; then
-	# Override compiler jobs for 3900XT - ETJAKEOC
-	time (taskset -c 0-21 env ${compiler_opt} make -j22 -l22)
-    else
-	time (env ${compiler_opt} make "${_make_jobs_arg}" ${diet_args} ${diet_target})
-    fi
-  } 3>&1 1>&2 2>&3
+  _build_kernel_core
 }
 
 hackbase() {
