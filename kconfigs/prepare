@@ -46,6 +46,30 @@ typeset -Ag _kernel_git_remotes=(
 
 _git_remote_names=("${!_kernel_git_remotes[@]}")
 
+_load_distro_script() {
+  local script_name=""
+  case "$_distro" in
+    Debian|Ubuntu|Mint) script_name="debian.sh" ;;
+    Fedora|Suse) script_name="fedora.sh" ;;
+    Gentoo) script_name="gentoo.sh" ;;
+    Slackware) script_name="slackware.sh" ;;
+    Void) script_name="void.sh" ;;
+    Arch) script_name="arch.sh" ;;
+    Generic) script_name="generic.sh" ;;
+  esac
+
+  if [ -n "$script_name" ] && [ -f "$_where/distros/$script_name" ]; then
+    # shellcheck source=/dev/null
+    source "$_where/distros/$script_name"
+  else
+    # If not found, we might be in Arch build where _distro is not yet set or set to Arch
+    if [ "$_distro" = "Arch" ] && [ -f "$_where/distros/arch.sh" ]; then
+        # shellcheck source=/dev/null
+        source "$_where/distros/arch.sh"
+    fi
+  fi
+}
+
 # fill with Torvalds Linux repo link if empty
 if [[ -z "$_git_mirror" ]]; then
   msg2 "using the gregkh repo"
@@ -53,25 +77,33 @@ if [[ -z "$_git_mirror" ]]; then
 fi
 
 # if alias, get actual link from map _kernel_git_remotes
-if [[ "${_git_remote_names[@]}" =~ "$_git_mirror" ]]; then
+_found_mirror="false"
+for _remote_name in "${_git_remote_names[@]}"; do
+  if [[ "$_remote_name" = "$_git_mirror" ]]; then
+    _found_mirror="true"
+    break
+  fi
+done
+
+if [ "$_found_mirror" = "true" ]; then
   msg2 "using git mirror alias $_git_mirror"
   _git_mirror="${_kernel_git_remotes[$_git_mirror]}"
 fi
 
-if $(! timeout 10 git ls-remote "$_git_mirror" >/dev/null) ||
-  [[ "$(git ls-remote $_git_mirror | head -n 1)" = *502* ]]; then
+if ! timeout 10 git ls-remote "$_git_mirror" >/dev/null ||
+  [[ "$(git ls-remote "$_git_mirror" | head -n 1)" = *502* ]]; then
   error "Remote unreachable or took too long to respond"
   exit 1
 fi
 
 # Fill out the latest tags map/dictionary
 _kernel_tags=$(git -c 'versionsort.suffix=-' \
-  ls-remote --exit-code --refs --sort='version:refname' --tags $_git_mirror '*.*' |
+  ls-remote --exit-code --refs --sort='version:refname' --tags "$_git_mirror" '*.*' |
   cut --delimiter='/' --fields=3)
 
 typeset -Ag _kver_latest_tags_map
 for _key in "${_current_kernels[@]}" "${_eol_kernels[@]}"; do
-  _kver_latest_tags_map[$_key]=$(echo "$_kernel_tags" | grep -F "v$_key" | grep -v "v$_key"[0-9] | tail -1 | cut -c1-)
+  _kver_latest_tags_map[$_key]=$(echo "$_kernel_tags" | grep -F "v$_key" | grep -v "v${_key}[0-9]" | tail -1 | cut -c1-)
 done
 
 # Get the kernel RT maps dynamically from upstream
@@ -214,10 +246,14 @@ _set_kver_internal_vars() {
 
   # VERSION, PATCHLEVEL, SUBLEVEL and EXTRAVERSION are defined in the first lines of kernel-src/Makefile
   # we source those lines to retrieve those strings
-  local VERSION=$(cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^VERSION | awk '{print $3}')
-  local PATCHLEVEL=$(cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^PATCHLEVEL | awk '{print $3}')
-  local SUBLEVEL=$(cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^SUBLEVEL | awk '{print $3}')
-  local EXTRAVERSION=$(cat "$_kernel_work_folder_abs"/Makefile | head -n 10 | grep ^EXTRAVERSION | awk '{print $3}')
+  local VERSION
+  VERSION=$(head -n 10 "$_kernel_work_folder_abs"/Makefile | grep ^VERSION | awk '{print $3}')
+  local PATCHLEVEL
+  PATCHLEVEL=$(head -n 10 "$_kernel_work_folder_abs"/Makefile | grep ^PATCHLEVEL | awk '{print $3}')
+  local SUBLEVEL
+  SUBLEVEL=$(head -n 10 "$_kernel_work_folder_abs"/Makefile | grep ^SUBLEVEL | awk '{print $3}')
+  local EXTRAVERSION
+  EXTRAVERSION=$(head -n 10 "$_kernel_work_folder_abs"/Makefile | grep ^EXTRAVERSION | awk '{print $3}')
 
   # example: "6.0"
   _basekernel="$VERSION.$PATCHLEVEL"
@@ -243,7 +279,7 @@ _set_kver_internal_vars() {
 
   _default_cpu_sched="eevdf"
 
-  printf "_basekernel='$_basekernel'\n_basever='$_basever'\n_sub='$_sub'\n_kver='$_kver'\n_default_cpu_sched='$_default_cpu_sched'" >>"$_where"/TKT_CONFIG
+  printf "_basekernel='%s'\n_basever='%s'\n_sub='%s'\n_kver='%s'\n_default_cpu_sched='%s'" "$_basekernel" "$_basever" "$_sub" "$_kver" "$_default_cpu_sched" >>"$_where"/TKT_CONFIG
 }
 
 _set_kernel_version() {
@@ -717,6 +753,8 @@ _tkg_initscript() {
     pkgbase="linux-${_kernelname}"
     echo "pkgbase=$pkgbase" >>"$_where/TKT_CONFIG"
   fi
+
+  _load_distro_script
 }
 
 user_patcher() {
@@ -791,15 +829,9 @@ _tkg_srcprep() {
 
   cd "$_kernel_work_folder_abs"
 
-  if [ "${_distro}" = "Arch" ]; then
-    if [ -n "$_custom_pkgbase" ]; then
-      echo "-${_custom_pkgbase}" >localversion.10-pkgrel
-      printf "Version tail set to \"-${_custom_pkgbase}\"\n" >"$_where"/logs/prepare.log.txt
-    else
-      echo "-${_cpusched}${_compiler_name}" >localversion.10-pkgrel
-      printf "Version tail set to \"-${_cpusched}${_compiler_name}\"\n" >"$_where"/logs/prepare.log.txt
-    fi
-    echo "" >localversion.20-pkgname
+  # Distro-specific pre-patching/setup
+  if command -v distro_srcprep_pre >/dev/null; then
+    distro_srcprep_pre
   fi
 
   # Hardened Patches
@@ -856,35 +888,6 @@ _tkg_srcprep() {
     if [ "${_preempt_rt}" != "1" ]; then
       tkgpatch="$srcdir/0003-glitched-base-nonrt.patch"
       _msg="Applying glitched base non-rt additions patch" && _tkg_patcher
-    fi
-
-    if [ "$_distro" = "Fedora" ]; then
-      tkgpatch="$srcdir/0013-fedora-rpm.patch"
-      _msg="RPM: fixing spec generator" && _tkg_patcher
-      if [[ "$_STRIP" == "true" ]]; then
-        tkgpatch="$srcdir/0013-fedora-strip-modules.patch"
-        _msg="RPM: strip modules" && _tkg_patcher
-      fi
-    elif [ "$_distro" = "Suse" ]; then
-      tkgpatch="$srcdir/0013-suse-rpm.patch"
-      _msg="RPM: fixing spec generator" && _tkg_patcher
-      if [[ "$_STRIP" == "true" ]]; then
-        tkgpatch="$srcdir/0013-suse-strip-modules.patch"
-        _msg="RPM: strip modules" && _tkg_patcher
-      fi
-    fi
-
-    if [ "$_distro" = "Suse" ]; then
-      tkgpatch="$srcdir/0013-suse-additions.patch"
-      _msg="Import Suse-specific patches" && _tkg_patcher
-    fi
-
-    if [ "$_distro" = "Gentoo" ]; then
-      # https://dev.gentoo.org/~mpagano/genpatches/trunk/
-      tkgpatch="$srcdir/0013-gentoo-kconfig.patch"
-      _msg="Import Gentoo-kconfig patches" && _tkg_patcher
-      tkgpatch="$srcdir/0013-gentoo-print-loaded-firmware.patch"
-      _msg="Print firmware names on load" && _tkg_patcher
     fi
 
     if [ -z $_misc_adds ]; then
@@ -1080,29 +1083,17 @@ _tkg_srcprep() {
     fi
   fi
 
-  if [ "$_distro" = "Gentoo" ]; then
-    # Default config for Gentoo as defined in kconfig
-    _enable "GENTOO_LINUX" "GENTOO_LINUX_UDEV" "GENTOO_LINUX_PORTAGE" "GENTOO_LINUX_INIT_SCRIPT" "GENTOO_PRINT_FIRMWARE_INFO" "GENTOO_LINUX_INIT_SYSTEMD"
-    _disable "GENTOO_KERNEL_SELF_PROTECTION"
-  fi
-
-  # Prevent Debian, Mint, and Ubuntu to sign stuff because it breaks stuff
-  if [[ "$_distro" = "Debian" || "$_distro" = "Mint" || "$_distro" = "Ubuntu" ]]; then
-    #Help Debian cert compile problem.
-    scripts/config --set-str "SYSTEM_TRUSTED_KEYS" ""
-    if [[ $_kver -lt 612 ]]; then # note: 6.12 removed MODULE_COMPRESS_NONE
-      #Debian/Mint/Ubuntu don't properly support zstd module compression
-      _disable "MODULE_COMPRESS_ZSTD"
-      _enable "MODULE_COMPRESS_NONE"
-    fi
-  fi
-
   # Build kernel without debug symbols
   [[ "$_STRIP" == "true" ]] && _enable "DEBUG_INFO_NONE"
 
   if [ "$_font_autoselect" != "false" ]; then
     _disable "FONT_TER16x32"
     _enable "FONT_AUTOSELECT"
+  fi
+
+  # Distro-specific post-setup
+  if command -v distro_srcprep_post >/dev/null; then
+    distro_srcprep_post
   fi
 
   _is_march_supported() {
@@ -1755,15 +1746,8 @@ CONFIG_DEBUG_INFO_BTF_MODULES=y\r
     rm -f "$_where"/linux"$_basever"-tkg-userpatches/$_p
   done
 
-  if [ "$_distro" = "Arch" ]; then
-    # don't run depmod on 'make install'. We'll do this ourselves in packaging
-    sed -i '2iexit 0' scripts/depmod.sh
-
-    # get kernel version
-    #make prepare ${compiler_opt}
-  fi
-
-  if [ true = "$_config_fragments" ]; then
+  # compiler optimization level
+  if [ "$_compileroptlevel" = "1" ]; then
     local fragments=()
     mapfile -d '' -t fragments < <(find "$_where"/ -type f -name "*.myfrag" -print0 | sort -z)
 
@@ -1949,46 +1933,46 @@ exit_cleanup() {
     rm -f "$srcdir"/customization.cfg
 
   elif [ "$_distro" == "Arch" ]; then
-    rm -rf "$srcdir"/linux-${_basekernel}/Documentation/filesystems/aufs/*
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/ABI/testing/*-aufs
-    rm -rf "$srcdir"/linux-${_basekernel}/fs/aufs/*
-    rm -f "$srcdir"/linux-${_basekernel}/include/uapi/linux/aufs*
+    rm -rf "$srcdir/linux-${_basekernel}/Documentation/filesystems/aufs/"*
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/ABI/testing/"*"-aufs"
+    rm -rf "$srcdir/linux-${_basekernel}/fs/aufs/"*
+    rm -f "$srcdir/linux-${_basekernel}/include/uapi/linux/aufs"*
 
-    rm -f "$srcdir"/linux-${_basekernel}/mm/prfile.c
+    rm -f "$srcdir/linux-${_basekernel}/mm/prfile.c"
 
-    rm -f "$srcdir"/linux-${_basekernel}/block/bfq*
+    rm -f "$srcdir/linux-${_basekernel}/block/bfq"*
 
-    rm -rf "$srcdir"/linux-${_basekernel}/drivers/scsi/vhba/*
+    rm -rf "$srcdir/linux-${_basekernel}/drivers/scsi/vhba/"*
 
-    rm -rf "$srcdir"/linux-${_basekernel}/fs/exfat/*
-    rm -f "$srcdir"/linux-${_basekernel}/include/trace/events/fs.h
+    rm -rf "$srcdir/linux-${_basekernel}/fs/exfat/"*
+    rm -f "$srcdir/linux-${_basekernel}/include/trace/events/fs.h"
 
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/scheduler/sched-PDS-mq.txt
-    rm -f "$srcdir"/linux-${_basekernel}/include/linux/skip_list.h
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/pds.c
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/pds_sched.h
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/scheduler/sched-PDS-mq.txt"
+    rm -f "$srcdir/linux-${_basekernel}/include/linux/skip_list.h"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/pds.c"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/pds_sched.h"
 
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/scheduler/sched-BMQ.txt
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/${_sched}.c
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/sched/alt_debug.c
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/alt_sched.h
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/scheduler/sched-BMQ.txt"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/${_sched}.c"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/sched/alt_debug.c"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/alt_sched.h"
 
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/scheduler/sched-BFS.txt
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/scheduler/sched-MuQSS.txt
-    rm -rf "$srcdir"/linux-${_basekernel}/arch/blackfin/*
-    rm -f "$srcdir"/linux-${_basekernel}/arch/powerpc/configs/c2k_defconfig
-    rm -f "$srcdir"/linux-${_basekernel}/arch/score/configs/spct6600_defconfig
-    rm -f "$srcdir"/linux-${_basekernel}/arch/tile/configs/tilegx_defconfig
-    rm -f "$srcdir"/linux-${_basekernel}/arch/tile/configs/tilepro_defconfig
-    rm -f "$srcdir"/linux-${_basekernel}/drivers/staging/lustre/lnet/lnet/lib-eq.c
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/sched/MuQSS*
-    rm -f "$srcdir"/linux-${_basekernel}/kernel/skip_list.c
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/scheduler/sched-BFS.txt"
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/scheduler/sched-MuQSS.txt"
+    rm -rf "$srcdir/linux-${_basekernel}/arch/blackfin/"*
+    rm -f "$srcdir/linux-${_basekernel}/arch/powerpc/configs/c2k_defconfig"
+    rm -f "$srcdir/linux-${_basekernel}/arch/score/configs/spct6600_defconfig"
+    rm -f "$srcdir/linux-${_basekernel}/arch/tile/configs/tilegx_defconfig"
+    rm -f "$srcdir/linux-${_basekernel}/arch/tile/configs/tilepro_defconfig"
+    rm -f "$srcdir/linux-${_basekernel}/drivers/staging/lustre/lnet/lnet/lib-eq.c"
+    rm -f "$srcdir/linux-${_basekernel}/kernel/sched/MuQSS"*
+    rm -f "$srcdir/linux-${_basekernel}/kernel/skip_list.c"
 
-    rm -f "$srcdir"/linux-${_basekernel}/Documentation/vm/uksm.txt
-    rm -f "$srcdir"/linux-${_basekernel}/include/linux/sradix-tree.h
-    rm -f "$srcdir"/linux-${_basekernel}/include/linux/uksm.h
-    rm -f "$srcdir"/linux-${_basekernel}/lib/sradix-tree.c
-    rm -f "$srcdir"/linux-${_basekernel}/mm/uksm.c
+    rm -f "$srcdir/linux-${_basekernel}/Documentation/vm/uksm.txt"
+    rm -f "$srcdir/linux-${_basekernel}/include/linux/sradix-tree.h"
+    rm -f "$srcdir/linux-${_basekernel}/include/linux/uksm.h"
+    rm -f "$srcdir/linux-${_basekernel}/lib/sradix-tree.c"
+    rm -f "$srcdir/linux-${_basekernel}/mm/uksm.c"
   fi
 
   if [ "${_distro}" = "Arch" ]; then
