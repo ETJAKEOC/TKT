@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TKT Installer Library
+# TKT Installer Library - Clean Version
 
 _install_dependencies() {
   _base_deps="bash bc bison ccache cmake cpio curl flex git kmod lz4 make patchutils perl python3 python3-pip rsync sudo tar time wget zstd whiptail"
@@ -83,6 +83,58 @@ maintenance_project_cleanup() {
     msg2 "Cleanup completed."
 }
 
+_config() {
+  _source_tkt_config
+
+  # modprobed-db sanity check
+  if [[ "$_modprobeddb" = "true" && "$_kernel_on_diet" == "true" ]]; then
+    msg2 "_modprobeddb and _kernel_on_diet cannot be used together."
+    exit 1
+  fi
+
+  if [[ "$_modprobeddb" = "true" ]]; then
+    msg2 "Using modprobed-db"
+    if [[ -f "$_where/$_modprobeddb_db_path" ]]; then
+      _modprobeddb_db_path="$_where/$_modprobeddb_db_path"
+    elif [[ "$_modprobeddb" = "false" && "$_kernel_on_diet" == "true" ]]; then
+      msg2 "Using TKT diet db"
+      _modprobeddb_db_path="$_KERNELS_DIR/$_basekernel/minimal-modprobed.db"
+    fi
+    if [ ! -f "$_modprobeddb_db_path" ]; then
+      msg2 "modprobed-db database not found"
+      exit 1
+    fi
+  fi
+
+  # shellcheck source=/dev/null
+  source lib/prepare.sh
+  _build_dir="$_SRC_DIR"
+  export KCPPFLAGS
+  export KCFLAGS
+
+  # Use custom compiler paths if defined
+  if [[ "$_compiler_name" =~ llvm ]] && [ -n "${CUSTOM_LLVM_PATH}" ]; then
+    PATH="${CUSTOM_LLVM_PATH}/bin:${CUSTOM_LLVM_PATH}/lib:${CUSTOM_LLVM_PATH}/include:${PATH}"
+  elif [ -n "${CUSTOM_GCC_PATH}" ]; then
+    PATH="${CUSTOM_GCC_PATH}/bin:${CUSTOM_GCC_PATH}/lib:${CUSTOM_GCC_PATH}/include:${PATH}"
+  fi
+
+  if [ "$_force_all_threads" = "true" ]; then
+    _thread_num=$(nproc)
+  else
+    _thread_num=$(($(nproc) / 2))
+    [ "$_thread_num" = "0" ] && _thread_num=1
+  fi
+
+  # ccache
+  if [ "$_noccache" != "true" ]; then
+    export PATH="/usr/lib64/ccache/:/usr/lib/ccache/bin/:$PATH"
+    export CCACHE_SLOPPINESS="file_macro,locale,time_macros"
+    export CCACHE_NOHASHDIR="true"
+    msg2 'Enabled ccache'
+  fi
+}
+
 tkt_cli_main() {
   _config
 
@@ -117,8 +169,11 @@ tkt_cli_main() {
         export HOSTLDFLAGS="-unwindlib=libunwind"
     fi
 
-    _tkg_srcprep
-    cd "$_kernel_work_folder_abs" || { echo "Source dir missing"; exit 1; }
+    if [[ "$_distro" != "Arch" ]]; then
+      _tkg_srcprep
+    fi
+
+    cd "$_TKT_ROOT" || { echo "Root dir missing"; exit 1; }
 
     distro_build_pkg
     distro_install_pkg

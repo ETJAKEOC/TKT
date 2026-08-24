@@ -26,48 +26,83 @@ options=('!strip' 'buildflags' 'makeflags' '!emptydirs' '!docs')
 _where="$PWD"
 
 # Source core library
+_where="$PWD"
 # shellcheck source=/dev/null
-source "$_where/lib/core.sh"
-
-# Create logs dir if it does not already exist
-[ -d "$_where/logs" ] || mkdir -p "$_where/logs"
-
-if [ -n "$FAKEROOTKEY" ]; then
-  echo "Sourcing 'TKT_CONFIG' file"
+if [ -f "../../lib/core.sh" ]; then
+    source "../../lib/core.sh"
 else
-  rm -f "$_where"/TKT_CONFIG
-  _source_tkt_config
-  # Save the resolved configuration to TKT_CONFIG for consistency
-  declare -p -x >>"$_where"/TKT_CONFIG
-  echo -e "_ispkgbuild=\"true\"\n_distro=\"Arch\"\n_where=\"$PWD\"" >>"$_where"/TKT_CONFIG
-  source "$_where"/TKT_CONFIG
-  # shellcheck source=/dev/null
-  source "$_where"/lib/prepare.sh
-  _tkg_initscript
+    source "${_where}/lib/core.sh"
 fi
 
-source "$_where"/TKT_CONFIG
+if [ -n "$FAKEROOTKEY" ]; then
+  msg2 "Sourcing configuration file"
+else
+  # If we are NOT in fakeroot, we are in the initial parsing/download phase
+  # If TKT_CONFIG doesn't exist in src/, we must be running makepkg directly
+  if [ ! -f "$_TKT_CONFIG_PATH" ]; then
+    _source_tkt_config
+    # Save the resolved configuration to TKT_CONFIG for consistency
+    {
+        declare -p | grep "^_"
+        echo "_ispkgbuild=\"true\""
+        echo "_distro=\"Arch\""
+        echo "_where=\"$PWD\""
+    } > "$_TKT_CONFIG_PATH"
+  fi
+  source "$_TKT_CONFIG_PATH"
+  # shellcheck source=/dev/null
+  if [ -f "$_TKT_ROOT/lib/prepare.sh" ]; then
+      source "$_TKT_ROOT/lib/prepare.sh"
+  else
+      source "$_where/lib/prepare.sh"
+  fi
+
+  # Ensure source is ready
+  if [ ! -d "$_kernel_work_folder_abs" ]; then
+    _tkg_initscript
+  else
+    _set_kver_internal_vars
+  fi
+fi
+
+source "$_TKT_CONFIG_PATH"
 
 # Define the final package variables for makepkg
+pkgbase="linux-${_kernelname}"
 pkgname=("${pkgbase}" "${pkgbase}-headers")
-pkgver="${_basekernel}"."${_sub}"
+pkgver="${_basekernel}.${_sub}"
 pkgrel=1
 
-for f in "$_where"/kernels/"$_basekernel"/* "$_where"/kernels/"$_basekernel"/patches/*; do
-  source+=("$f")
-  sha256sums+=("SKIP")
-done
+source=()
+sha256sums=()
+
+_kern_assets_dir="$_KERNELS_DIR/$_basekernel"
+if [ -d "$_kern_assets_dir" ]; then
+    for f in "$_kern_assets_dir"/* "$_kern_assets_dir"/patches/*; do
+      [ -f "$f" ] || continue
+      # Use relative paths from distros/arch to kernels/...
+      # Actually, makepkg handles absolute paths if they are local files.
+      source+=("$(realpath "$f")")
+      sha256sums+=("SKIP")
+    done
+fi
 
 export KBUILD_BUILD_HOST=archlinux
 export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
-  source "$_where"/TKT_CONFIG
+  source "$_TKT_CONFIG_PATH"
   # shellcheck source=/dev/null
-  source "$_where"/lib/prepare.sh
-  rm -rf "$pkgdir" # Nuke the entire pkg folder so it'll get regenerated clean on next build
-  ln -s "${_kernel_work_folder_abs}" "${srcdir}/linux-src-git"
+  if [ -f "$_TKT_ROOT/lib/prepare.sh" ]; then
+      source "$_TKT_ROOT/lib/prepare.sh"
+  else
+      source "$_where/lib/prepare.sh"
+  fi
+
+  rm -rf "$pkgdir" # Nuke the entire pkg folder
+
+  # Patching happens in src/linux-src-git
   _tkg_srcprep
 }
 

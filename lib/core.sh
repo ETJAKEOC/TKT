@@ -1,16 +1,28 @@
 #!/bin/bash
 
-# TKT Core Library
+# TKT Core Library - Clean Version
 
 # Path Constants
 _where="${_where:-$(pwd)}"
-_TKT_ROOT="$_where"
+# If we are in a sub-directory (like distros/arch), find the toolkit root
+if [ -f "$_where/tkt" ]; then
+    _TKT_ROOT="$_where"
+elif [ -f "$_where/../../tkt" ]; then
+    _TKT_ROOT="$(realpath "$_where/../..")"
+else
+    _TKT_ROOT="$_where"
+fi
+
 _KERNELS_DIR="$_TKT_ROOT/kernels"
 _DISTROS_DIR="$_TKT_ROOT/distros"
 _LIB_DIR="$_TKT_ROOT/lib"
 _SRC_DIR="$_TKT_ROOT/src"
 _PKG_DIR="$_TKT_ROOT/pkg"
 _LOGS_DIR="$_TKT_ROOT/logs"
+_TKT_CONFIG_PATH="$_SRC_DIR/TKT_CONFIG"
+
+# Ensure core directories exist
+mkdir -p "$_SRC_DIR" "$_PKG_DIR" "$_LOGS_DIR"
 
 # Ensure core directories exist
 mkdir -p "$_SRC_DIR" "$_PKG_DIR" "$_LOGS_DIR"
@@ -61,6 +73,7 @@ typeset -Ag _kernel_git_remotes=(
 )
 
 _git_remote_names=("${!_kernel_git_remotes[@]}")
+_git_mirror="${_kernel_git_remotes[kernel.org]}"
 
 # RT Map caching
 declare -A _rt_subver_map
@@ -427,6 +440,11 @@ _source_tkt_config() {
       [ -f "$_where/customization.cfg" ] && source "$_where/customization.cfg"
     fi
 
+    if [ -f "$_TKT_CONFIG_PATH" ]; then
+        # shellcheck source=/dev/null
+        source "$_TKT_CONFIG_PATH"
+    fi
+
     if [ -f "$_EXT_CONFIG_PATH" ]; then
       # shellcheck source=/dev/null
       source "$_EXT_CONFIG_PATH"
@@ -458,7 +476,15 @@ _tui_whiptail_menu() {
     local width="${4:-60}"
     local list_height="${5:-10}"
     shift 5
-    whiptail --title "$title" --menu "$text" "$height" "$width" "$list_height" "$@" 3>&1 1>&2 2>&3
+
+    # Use _TUI_DEFAULT_ITEM if set, then clear it to avoid accidental reuse
+    local def_item_args=()
+    if [ -n "$_TUI_DEFAULT_ITEM" ]; then
+        def_item_args=(--default-item "$_TUI_DEFAULT_ITEM")
+        unset _TUI_DEFAULT_ITEM
+    fi
+
+    whiptail --title "$title" "${def_item_args[@]}" --menu "$text" "$height" "$width" "$list_height" "$@" 3>&1 1>&2 2>&3
 }
 
 # TUI Helper: Generic whiptail checklist wrapper

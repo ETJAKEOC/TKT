@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# TKT - The Kernel Toolkit TUI Library
+# TKT - The Kernel Toolkit TUI Library - Clean Version
 
-# This library should only define functions.
-# Global variables used by TUI are initialized in tkt_tui_main.
+# Persisted TUI selection states
+_LAST_MAIN_CHOICE="1"
+_LAST_BASIC_CONFIG_CHOICE="1"
+_LAST_OPTIMIZATION_CHOICE="1"
+_LAST_ADVANCED_CHOICE="1"
 
 tkt_tui_main() {
     # Ensure _where is available (fallback if not set by entry point)
@@ -20,6 +23,7 @@ tkt_tui_main() {
     _cpusched="${_cpusched:-eevdf}"
     _timer_freq="${_timer_freq:-1000}"
     _processor_opt="${_processor_opt:-x86-64}"
+    _git_mirror="${_git_mirror:-${_kernel_git_remotes[kernel.org]}}"
 
     # Load distro script early to ensure paths are set
     _load_distro_script
@@ -31,21 +35,25 @@ tkt_tui_main() {
 
 tui_main_menu() {
     local choice
-    choice=$(_tui_whiptail_menu "TꓘT - The Kernel Toolkit" "Choose an option" 18 65 11 \
+    _TUI_DEFAULT_ITEM="$_LAST_MAIN_CHOICE"
+    choice=$(_tui_whiptail_menu "TꓘT - The Kernel Toolkit" "Choose an option" 20 65 12 \
         "1" "Select Distribution ($_distro)" \
         "2" "Kernel Version and Scheduler" \
         "3" "Optimization Options (Compiler, LTO, etc.)" \
         "4" "Patch and Feature Toggles" \
         "5" "Interactive & Maintenance Prompts" \
         "6" "Advanced Build Options (NUKR, diet, etc.)" \
-        "7" "Maintenance: Regen Initramfs & GRUB" \
-        "8" "Maintenance: Project Cleanup" \
-        "9" "Save Configuration to TKT.cfg" \
-        "10" "Start Build and Install" \
-        "11" "Exit")
+        "7" "Select Git Mirror" \
+        "8" "Maintenance: Regen Initramfs & GRUB" \
+        "9" "Maintenance: Project Cleanup" \
+        "10" "Save Configuration to TKT.cfg" \
+        "11" "Start Build and Install" \
+        "12" "Exit")
 
     # If Cancel/Esc, exit gracefully
     [ -z "$choice" ] && exit 0
+
+    _LAST_MAIN_CHOICE="$choice"
 
     case "$choice" in
         1) tui_select_distro ;;
@@ -54,13 +62,27 @@ tui_main_menu() {
         4) tui_patch_feature_toggles ;;
         5) tui_interactive_prompts ;;
         6) tui_advanced_build_options ;;
-        7) tui_trigger_maintenance ;;
-        8) tui_trigger_cleanup ;;
-        9) tui_save_config ;;
-        10) tui_start_build ;;
-        11) exit 0 ;;
+        7) tui_select_mirror ;;
+        8) tui_trigger_maintenance ;;
+        9) tui_trigger_cleanup ;;
+        10) tui_save_config ;;
+        11) tui_start_build ;;
+        12) exit 0 ;;
         *) exit 0 ;;
     esac
+}
+
+tui_select_mirror() {
+    local menu_items=()
+    for m in "${!_kernel_git_remotes[@]}"; do
+        menu_items+=("$m" "${_kernel_git_remotes[$m]}")
+    done
+
+    local new_mirror_key
+    new_mirror_key=$(_tui_whiptail_menu "Select Git Mirror" "Choose your preferred kernel source" 18 70 4 "${menu_items[@]}")
+    if [ -n "$new_mirror_key" ]; then
+        _git_mirror="${_kernel_git_remotes[$new_mirror_key]}"
+    fi
 }
 
 tui_trigger_maintenance() {
@@ -96,12 +118,15 @@ tui_select_distro() {
 
 tui_kernel_basic_config() {
     local choice
+    _TUI_DEFAULT_ITEM="$_LAST_BASIC_CONFIG_CHOICE"
     choice=$(_tui_whiptail_menu "Kernel Configuration" "Select option to configure" 18 65 6 \
         "1" "Kernel Version ($_kernel_git_tag)" \
         "2" "CPU Scheduler ($_cpusched)" \
         "3" "Timer Frequency ($_timer_freq)" \
         "4" "Kernel Base Config ($_configfile)" \
         "5" "Back to Main Menu")
+
+    [ -n "$choice" ] && _LAST_BASIC_CONFIG_CHOICE="$choice"
 
     case "$choice" in
         1) tui_select_version ;;
@@ -209,6 +234,7 @@ tui_select_timer_freq() {
 
 tui_optimization_menu() {
     local choice
+    _TUI_DEFAULT_ITEM="$_LAST_OPTIMIZATION_CHOICE"
     choice=$(_tui_whiptail_menu "Optimization Options" "Advanced Tuning" 18 65 7 \
         "1" "Compiler ($_compiler)" \
         "2" "CPU Micro-architecture ($_processor_opt)" \
@@ -217,6 +243,8 @@ tui_optimization_menu() {
         "5" "AutoFDO ($_auto_afdo)" \
         "6" "Propeller ($_propeller_generate / $_propeller_use)" \
         "7" "Back to Main Menu")
+
+    [ -n "$choice" ] && _LAST_OPTIMIZATION_CHOICE="$choice"
 
     case "$choice" in
         1) tui_select_compiler ;;
@@ -354,6 +382,7 @@ tui_interactive_prompts() {
 
 tui_advanced_build_options() {
     local choice
+    _TUI_DEFAULT_ITEM="$_LAST_ADVANCED_CHOICE"
     choice=$(_tui_whiptail_menu "Advanced Build Options" "Configure build behavior" 18 65 6 \
         "1" "Strip Debug Symbols ($_STRIP)" \
         "2" "Nuke Build Folder (_NUKR: $_NUKR)" \
@@ -361,6 +390,8 @@ tui_advanced_build_options() {
         "4" "Use modprobed-db ($_modprobeddb)" \
         "5" "Force All Threads ($_force_all_threads)" \
         "6" "Back to Main Menu")
+
+    [ -n "$choice" ] && _LAST_ADVANCED_CHOICE="$choice"
 
     case "$choice" in
         1) _tui_toggle_var "_STRIP"; tui_advanced_build_options ;;
@@ -408,6 +439,7 @@ tui_save_config() {
         echo "_kernel_on_diet=\"$_kernel_on_diet\""
         echo "_modprobeddb=\"$_modprobeddb\""
         echo "_force_all_threads=\"$_force_all_threads\""
+        echo "_git_mirror=\"$_git_mirror\""
     } > "$config_file"
 
     whiptail --msgbox "Configuration saved to $config_file" 8 45
@@ -419,7 +451,7 @@ tui_start_build() {
     # Export ALL variables
     export _distro _kernel_git_tag _compiler _processor_opt _cpusched _timer_freq _configfile
     export _lto_mode _pgo_config _auto_afdo _propeller_generate _propeller_use
-    export _menunconfig _diffconfig
+    export _menunconfig _diffconfig _git_mirror
     export _clear_patches _glitched_base _zenify _acs_override _bcachefs _mglru _ntsync _openrgb
     export _misc_adds _numadisable _ftracedisable
     export _STRIP _NUKR _kernel_on_diet _modprobeddb _force_all_threads

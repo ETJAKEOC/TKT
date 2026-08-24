@@ -27,6 +27,7 @@
 /logs/
 
 # Legacy and Misc
+**/TKT_CONFIG
 kernel_updates
 gnupg/
 kernelconfig.new

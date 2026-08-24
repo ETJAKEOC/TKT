@@ -17,11 +17,36 @@ distro_gen_kern_name() {
 
 distro_build_pkg() {
   msg2 "Building Arch Linux package via makepkg..."
-  # makepkg must be run from the root, pointing to the PKGBUILD in distros/arch/
-  cd "$_TKT_ROOT" || exit 1
-  # Use -p to point to the relocated PKGBUILD
-  # Use -sc to clean up after build
-  makepkg -p distros/arch/PKGBUILD -sc
+
+  # Ensure variables are saved for makepkg
+  _source_tkt_config
+
+  # Generate TKT_CONFIG in the arch directory
+  # We pass absolute paths to ensure makepkg knows where the toolkit root is
+  {
+      declare -p | grep "^_"
+      echo "_ispkgbuild=\"true\""
+      echo "_distro=\"Arch\""
+      echo "_where=\"$_TKT_ROOT\""
+      echo "_SRC_DIR=\"$_SRC_DIR\""
+      echo "_PKG_DIR=\"$_PKG_DIR\""
+      echo "_LOGS_DIR=\"$_LOGS_DIR\""
+  } > "$_DISTROS_DIR/arch/TKT_CONFIG"
+
+  # makepkg usually handles its own dependencies via depends/makedepends
+  # We run it from the arch directory and point it to the root pkg/ and src/
+  cd "$_DISTROS_DIR/arch" || exit 1
+
+  # PKGDEST: where to put the resulting package
+  # SRCDEST: where to look for/put downloaded sources
+  # SRCPKGDEST: where to put source packages
+  # LOGDEST: where to put build logs
+
+  PKGDEST="$_PKG_DIR" \
+  SRCDEST="$_SRC_DIR" \
+  SRCPKGDEST="$_PKG_DIR" \
+  LOGDEST="$_LOGS_DIR" \
+  makepkg -sc
 }
 
 distro_install_pkg() {
