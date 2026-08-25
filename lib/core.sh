@@ -28,7 +28,7 @@ mkdir -p "$_SRC_DIR" "$_PKG_DIR" "$_LOGS_DIR"
 mkdir -p "$_SRC_DIR" "$_PKG_DIR" "$_LOGS_DIR"
 
 # Static Data
-_current_kernels=("7.2" "7.1" "6.18")
+_current_kernels=("7.3" "7.2" "7.1" "6.18")
 _eol_kernels=()
 
 typeset -Ag _all_scheds=(
@@ -93,6 +93,29 @@ warning() {
 
 plain() {
   echo -e "$1" >&2
+}
+
+# Sudo wrapper for systems without sudo (e.g. some Gentoo installs)
+sudo() {
+  if command -v sudo >/dev/null 2>&1; then
+    command sudo "$@"
+  elif command -v doas >/dev/null 2>&1; then
+    doas "$@"
+  else
+    # Fallback to su -c
+    local cmd_str
+    cmd_str=$(printf "%q " "$@")
+    su -c "$cmd_str"
+  fi
+}
+
+_gen_kern_name() {
+  if declare -f distro_gen_kern_name >/dev/null; then
+    distro_gen_kern_name
+  else
+    # Fallback/Generic naming
+    _kernelname="${_basekernel}.${_sub}-${_kernel_flavor}"
+  fi
 }
 
 _load_distro_script() {
@@ -170,6 +193,7 @@ _strip_vmlinux_file() {
 # Common kernel build workflow (naming, localversion, make, winesync, strip)
 _build_kernel_generic() {
   _gen_kern_name
+  cd "$_kernel_work_folder_abs" || { error "Kernel source dir not found at $_kernel_work_folder_abs"; exit 1; }
   ./scripts/config --set-str LOCALVERSION "-${_kernel_flavor}"
   msg2 "Building kernel..."
   _build_kernel_core

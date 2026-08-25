@@ -1,0 +1,79 @@
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index b2879a6be..b76446ea5 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -65,7 +65,7 @@ struct pci_pme_device {
+ 	struct pci_dev *dev;
+ };
+ 
+-#define PME_TIMEOUT 1000 /* How long between PME checks */
++#define PME_TIMEOUT 4000 /* How long between PME checks */
+ 
+ /*
+  * Following exit from Conventional Reset, devices must be ready within 1 sec
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 7e2153301..8aa223afb 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -163,6 +163,7 @@ static inline bool wq_has_sleeper(struct wait_queue_head *wq_head)
+ 
+ extern void add_wait_queue(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
+ extern void add_wait_queue_exclusive(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
++extern void add_wait_queue_exclusive_lifo(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
+ extern void add_wait_queue_priority(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
+ extern int add_wait_queue_priority_exclusive(struct wait_queue_head *wq_head,
+ 					     struct wait_queue_entry *wq_entry);
+diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
+index b9c180ac1..cd082e02a 100644
+--- a/kernel/locking/rwsem.c
++++ b/kernel/locking/rwsem.c
+@@ -770,6 +770,7 @@ rwsem_spin_on_owner(struct rw_semaphore *sem)
+ 	struct task_struct *new, *owner;
+ 	unsigned long flags, new_flags;
+ 	enum owner_state state;
++	int i = 0;
+ 
+ 	lockdep_assert_preemption_disabled();
+ 
+@@ -806,7 +807,8 @@ rwsem_spin_on_owner(struct rw_semaphore *sem)
+ 			break;
+ 		}
+ 
+-		cpu_relax();
++		if (i++ > 1000)
++			cpu_relax();
+ 	}
+ 
+ 	return state;
+@@ -947,7 +949,8 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+ 		 * memory barriers as we'll eventually observe the right
+ 		 * values at the cost of a few extra spins.
+ 		 */
+-		cpu_relax();
++		if (i++ > 1000)
++			cpu_relax();
+ 	}
+ 	osq_unlock(&sem->osq);
+ done:
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index d033f600f..5d1caaf27 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -49,6 +49,17 @@ void add_wait_queue_priority(struct wait_queue_head *wq_head, struct wait_queue_
+ }
+ EXPORT_SYMBOL_GPL(add_wait_queue_priority);
+ 
++void add_wait_queue_exclusive_lifo(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
++{
++	unsigned long flags;
++
++	wq_entry->flags |= WQ_FLAG_EXCLUSIVE;
++	spin_lock_irqsave(&wq_head->lock, flags);
++	__add_wait_queue(wq_head, wq_entry);
++	spin_unlock_irqrestore(&wq_head->lock, flags);
++}
++EXPORT_SYMBOL(add_wait_queue_exclusive_lifo);
++
+ int add_wait_queue_priority_exclusive(struct wait_queue_head *wq_head,
+ 				      struct wait_queue_entry *wq_entry)
+ {

@@ -4,25 +4,25 @@
 
 _undefine() {
   for _config_name in "$@"; do
-    scripts/config -k --undefine "${_config_name}"
+    ./scripts/config -k --undefine "${_config_name}"
   done
 }
 
 _enable() {
   for _config_name in "$@"; do
-    scripts/config -k --enable "${_config_name}"
+    ./scripts/config -k --enable "${_config_name}"
   done
 }
 
 _disable() {
   for _config_name in "$@"; do
-    scripts/config -k --disable "${_config_name}"
+    ./scripts/config -k --disable "${_config_name}"
   done
 }
 
 _module() {
   for _config_name in "$@"; do
-    scripts/config -k --module "${_config_name}"
+    ./scripts/config -k --module "${_config_name}"
   done
 }
 
